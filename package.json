@@ -1,0 +1,22 @@
+{
+  "name": "vyra-rewards-pro",
+  "version": "1.0.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "expo": "~51.0.32",
+    "expo-constants": "~16.0.2",
+    "react": "18.2.0",
+    "react-native": "0.74.5",
+    "react-native-google-mobile-ads": "^14.12.1"
+  },
+  "devDependencies": {
+    "babel-preset-expo": "~11.0.10",
+    "typescript": "~5.3.3"
+  }
+}
