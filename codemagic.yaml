@@ -5,19 +5,14 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       node: 20.18.1
-      groups:
-        - expo
       vars:
         JAVA_VERSION: 17
     scripts:
       - name: Install dependencies
-        script: |
-          npm install
+        script: npm install
       - name: Expo prebuild
-        script: |
-          npx expo prebuild --platform android --clean
+        script: npx expo prebuild --platform android --clean
       - name: Build APK
-        script: |
-          cd android && ./gradlew assembleRelease
+        script: cd android && ./gradlew assembleRelease
     artifacts:
       - android/app/build/outputs/**/*.apk
