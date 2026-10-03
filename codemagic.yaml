@@ -1,17 +1,18 @@
 workflows:
   vyra-apk:
-    name: Vyra APK Free
-    instance_type: linux
+    name: Vyra APK
+    instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
       node: 20.18.1
-      java: 17
+      vars:
+        JAVA_HOME: /Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home
     scripts:
       - name: Install
         script: npm install
       - name: Build APK
         script: |
           npx expo prebuild --platform android --clean --non-interactive
-          cd android && ./gradlew assembleRelease
+          cd android &&./gradlew assembleRelease
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
