@@ -8,7 +8,7 @@ workflows:
       java: 17
     scripts:
       - name: Install
-        script: npm install
+        script: npm install --legacy-peer-deps
       - name: Build APK
         script: |
           npx expo prebuild --platform android --clean --non-interactive
