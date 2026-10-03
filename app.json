@@ -5,6 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#000000",
+      "resizeMode": "contain"
+    },
     "android": {
       "package": "com.vyrarewards.earn"
     },
@@ -12,9 +16,14 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-9958539812897899~8572396012"
+          "androidAppId": "ca-app-pub-9958539812897898~1234567890"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "12345678-1234-1234-1234-123456789012"
+      }
+    }
   }
 }
