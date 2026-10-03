@@ -12,7 +12,6 @@ workflows:
       - name: Build APK
         script: |
           CI=1 npx expo prebuild --platform android --clean
-          sed -i '' 's/<application/<application><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-9958539812897899~1555530622"\/>/' android/app/src/main/AndroidManifest.xml
           cd android && ./gradlew assembleRelease
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
