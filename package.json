@@ -13,7 +13,7 @@
     "expo-constants": "~16.0.2",
     "react": "18.2.0",
     "react-native": "0.74.5",
-    "react-native-google-mobile-ads": "^13.4.0"
+    "react-native-google-mobile-ads": "12.9.0"
   },
   "devDependencies": {
     "babel-preset-expo": "~11.0.10",
