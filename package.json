@@ -1,23 +1,29 @@
 {
-  "name": "vyra-rewards-pro",
-  "version": "1.0.0",
-  "private": true,
-  "main": "node_modules/expo/AppEntry.js",
-  "scripts": {
-    "start": "expo start",
-    "android": "expo run:android"
-  },
-  "dependencies": {
-    "@react-native-async-storage/async-storage": "1.23.1",
-    "expo": "~51.0.32",
-    "expo-build-properties": "~0.12.5",
-    "expo-constants": "~16.0.2",
-    "react": "18.2.0",
-    "react-native": "0.74.5",
-    "react-native-google-mobile-ads": "12.9.0"
-  },
-  "devDependencies": {
-    "babel-preset-expo": "~11.0.10",
-    "typescript": "~5.3.3"
+  "expo": {
+    "name": "Vyra Rewards Pro",
+    "slug": "vyra-rewards-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.vyrarewards.earn"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34
+          }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-9958539812897899~1555530622"
+        }
+      ]
+    ]
   }
 }
