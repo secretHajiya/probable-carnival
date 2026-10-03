@@ -1,14 +1,19 @@
 workflows:
   vyra-apk:
     name: Vyra APK
-    instance_type: linux_x2
+    instance_type: linux
     max_build_duration: 60
     environment:
-      node: 20
+      node: 20.18.1
       java: 17
     scripts:
-      - npm install
-      - npx expo prebuild --platform android --non-interactive
-      - cd android && ./gradlew assembleRelease
+      - name: Install deps
+        script: npm install
+      - name: Prebuild android
+        script: npx expo prebuild --platform android --clean --non-interactive
+      - name: Build APK
+        script: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
