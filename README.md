@@ -3,7 +3,7 @@
 ## Build an Android APK
 
 1. Create a GitHub repository and upload these project files.
-2. On your computer or supported terminal, install dependencies:
+2. On your computer or supportked terminal, install dependencies:
    `npm install`
 3. Install EAS CLI:
    `npm install -g eas-cli`
