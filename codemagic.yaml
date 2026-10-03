@@ -11,7 +11,7 @@ workflows:
         script: npm install --legacy-peer-deps
       - name: Build APK
         script: |
-          npx expo prebuild --platform android --clean --non-interactive
+          CI=1 npx expo prebuild --platform android --clean
           cd android && ./gradlew assembleRelease
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
