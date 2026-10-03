@@ -1,18 +1,14 @@
 workflows:
-  android-workflow:
-    name: Vyra Rewards APK
+  vyra-apk:
+    name: Vyra APK
+    instance_type: linux_x2
     max_build_duration: 60
-    instance_type: mac_mini_m2
     environment:
-      node: 20.18.1
-      vars:
-        JAVA_VERSION: 17
+      node: 20
+      java: 17
     scripts:
-      - name: Install dependencies
-        script: npm install
-      - name: Expo prebuild
-        script: npx expo prebuild --platform android --clean
-      - name: Build APK
-        script: cd android && ./gradlew assembleRelease
+      - npm install
+      - npx expo prebuild --platform android --non-interactive
+      - cd android && ./gradlew assembleRelease
     artifacts:
-      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/apk/release/*.apk
