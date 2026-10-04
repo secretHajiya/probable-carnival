@@ -1,51 +1,35 @@
 workflows:
-vyra-apk:
-name: Vyra Rewards Pro Android Debug APK
-max_build_duration: 60
-instance_type: mac_mini_m2
-
-environment:
-  vars:
-    PACKAGE_NAME: "com.vyrarewards.earn"
-  node: 20.18.1
-  java: 17
-
-scripts:
-  - name: Install dependencies
-    script: |
-      set -e
-      npm install
-
-  - name: Generate native Android project
-    script: |
-      set -e
-      npx expo prebuild --platform android --clean
-
-  - name: Set Kotlin 1.9.25
-    script: |
-      set -e
-      echo "Forcing Kotlin version to 1.9.25"
-
-      if [ -f android/gradle.properties ]; then
-        if grep -q "^kotlinVersion=" android/gradle.properties; then
-          sed -i.bak 's/^kotlinVersion=.*/kotlinVersion=1.9.25/' android/gradle.properties
-        else
-          echo "kotlinVersion=1.9.25" >> android/gradle.properties
-        fi
-      else
-        echo "kotlinVersion=1.9.25" > android/gradle.properties
-      fi
-
-      grep "kotlinVersion" android/gradle.properties || true
-
-  - name: Build Android debug APK
-    script: |
-      set -e
-      echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-      cd android
-      chmod +x gradlew
-      ./gradlew --stop || true
-      ./gradlew assembleDebug --no-daemon
-
-artifacts:
-  - android/app/build/outputs/apk/debug/*.apk
+  vyra-apk:
+    name: Vyra Rewards Pro Android Debug APK
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      vars:
+        PACKAGE_NAME: "com.vyrarewards.earn"
+      node: 20.18.1
+      java: 17
+    scripts:
+      - name: Install dependencies
+        script: |
+          set -e
+          npm install
+      - name: Generate native Android project
+        script: |
+          set -e
+          npx expo prebuild --platform android --clean
+      - name: Set Kotlin 1.9.25
+        script: |
+          set -e
+          echo "Forcing Kotlin version to 1.9.25"
+          sed -i.bak "s/1.9.24/1.9.25/g" android/build.gradle || true
+          find android -name "*.gradle" -type f -exec sed -i.bak "s/1.9.24/1.9.25/g" {} \; || true
+          rm -f android/app/src/main/res/values/splash_colors.xml
+      - name: Build Android debug APK
+        script: |
+          set -e
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+    artifacts:
+      - android/app/build/outputs/apk/debug/*.apk
