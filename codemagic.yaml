@@ -10,7 +10,7 @@ workflows:
       - name: Install and Build APK
         script: |
           npm install --legacy-peer-deps
-          npx expo prebuild --platform android --clean --non-interactive
+          CI=1 npx expo prebuild --platform android --clean
           cd android && ./gradlew assembleRelease --no-daemon -x lint
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
