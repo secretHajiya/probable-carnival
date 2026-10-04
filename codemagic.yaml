@@ -17,12 +17,30 @@ workflows:
         script: |
           set -e
           npx expo prebuild --platform android --clean
-      - name: Set Kotlin 1.9.25
+      - name: Force Kotlin 1.9.25 everywhere
         script: |
           set -e
-          sed -i.bak "s/1.9.24/1.9.25/g" android/build.gradle || true
-          find android -name "*.gradle" -exec sed -i.bak "s/1.9.24/1.9.25/g" {} \; || true
-          rm -f android/app/src/main/res/values/splash_colors.xml
+          echo "Patching..."
+          ls android/build.gradle
+          # Patch build.gradle
+          python3 << 'PY'
+          import pathlib
+          p=pathlib.Path("android/build.gradle")
+          txt=p.read_text()
+          txt=txt.replace("1.9.24","1.9.25").replace("1.9.23","1.9.25")
+          if "kotlinVersion" not in txt:
+              txt=txt.replace("ext {", "ext {\n        kotlinVersion = \"1.9.25\"\n")
+          p.write_text(txt)
+          print("Patched android/build.gradle")
+          PY
+          # Patch gradle.properties
+          echo "kotlinVersion=1.9.25" >> android/gradle.properties
+          echo "kotlin.version=1.9.25" >> android/gradle.properties
+          cat android/gradle.properties
+          cat android/build.gradle | grep -n "kotlin" | head -20
+          # Patch node_modules
+          find node_modules/expo-modules-core -name "*.gradle" -exec sed -i "s/1.9.24/1.9.25/g" {} \; || true
+          rm -f android/app/src/main/res/values/splash_colors.xml || true
       - name: Build Android debug APK
         script: |
           set -e
@@ -30,6 +48,6 @@ workflows:
           cd android
           chmod +x gradlew
           ./gradlew --stop || true
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon -PkotlinVersion=1.9.25 -Pkotlin.version=1.9.25 --stacktrace
     artifacts:
       - android/app/build/outputs/apk/debug/*.apk
