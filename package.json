@@ -1,3 +1,4 @@
+
 {
   "name": "vyra-rewards-pro",
   "version": "1.0.0",
@@ -9,14 +10,14 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
-    "expo": "~51.0.32",
-    "expo-constants": "~16.0.2",
-    "react": "18.2.0",
-    "react-native": "0.74.5",
+    "expo": "~52.0.0",
+    "expo-constants": "~17.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.5",
     "react-native-google-mobile-ads": "14.11.0"
   },
   "devDependencies": {
-    "babel-preset-expo": "~11.0.10",
+    "babel-preset-expo": "~12.0.0",
     "typescript": "~5.3.3"
   }
 }
