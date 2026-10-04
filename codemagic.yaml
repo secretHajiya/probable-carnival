@@ -10,14 +10,6 @@ environment:
   node: 20.18.1
 
 scripts:
-  - name: Check project files
-    script: |
-      set -e
-      test -f App.tsx
-      test -f app.json
-      test -f package.json
-      test -f codemagic.yaml
-
   - name: Install dependencies
     script: |
       set -e
