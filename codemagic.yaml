@@ -1,28 +1,22 @@
 workflows:
   vyra-apk:
-    name: Vyra Rewards Pro - Release APK
+    name: Vyra Rewards Pro - Release
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
       vars:
-        PACKAGE_NAME: "com.vyrarewards.earn"
+        NODE_OPTIONS: "--max-old-space-size=4096"
       node: 20.18.1
       java: 17
     scripts:
-      - name: Install dependencies
+      - name: Install
+        script: npm install --legacy-peer-deps
+      - name: Prebuild
+        script: npx expo prebuild --platform android --clean
+      - name: Build Release APK
         script: |
-          set -e
-          npm install
-      - name: Generate native Android project
-        script: |
-          set -e
-          npx expo prebuild --platform android --clean
-      - name: Build Android RELEASE APK (Normal App)
-        script: |
-          set -e
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
