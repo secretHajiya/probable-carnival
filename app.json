@@ -6,12 +6,19 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": false,
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/icon.png",
       "backgroundColor": "#000000",
       "resizeMode": "contain"
     },
     "android": {
-      "package": "com.vyrarewards.earn"
+      "package": "com.vyrarewards.earn",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#000000"
+      }
     },
     "plugins": [
       [
