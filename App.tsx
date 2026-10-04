@@ -1,27 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Alert, Animated, ScrollView, Share, StatusBar, StyleSheet, Text,
-  TextInput, TouchableOpacity, View
-} from 'react-native';
+import { Alert, Animated, ScrollView, Share, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import mobileAds, {
-  AdEventType, BannerAd, BannerAdSize, InterstitialAd, RewardedAd,
-  RewardedAdEventType, TestIds
-} from 'react-native-google-mobile-ads';
+import mobileAds, { AdEventType, BannerAd, BannerAdSize, InterstitialAd, RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 const IDS = {
   banner: __DEV__? TestIds.BANNER : 'ca-app-pub-9958539812897899/2577972441',
   interstitial: __DEV__? TestIds.INTERSTITIAL : 'ca-app-pub-9958539812897899/4358011936',
   rewarded: __DEV__? TestIds.REWARDED : 'ca-app-pub-9958539812897899/7027357556',
 };
-const STORE = {
-  coins: 'vyra.coins', streak: 'vyra.streak', lastCheckin: 'vyra.lastCheckin',
-  ads: 'vyra.adsWatched', spin: 'vyra.spinDate', scratch: 'vyra.scratch',
-  withdrawals: 'vyra.withdrawals', referral: 'vyra.referral',
-  user: 'vyra.user', isLoggedIn: 'vyra.isLoggedIn'
-};
-const COINS_PER_NAIRA = 20; // 20 coins = ₦1
-const MIN_WITHDRAWAL = 100000; // 100,000 coins = ₦5,000
+const STORE = { coins: 'vyra.coins', streak: 'vyra.streak', lastCheckin: 'vyra.lastCheckin', ads: 'vyra.adsWatched', spin: 'vyra.spinDate', scratch: 'vyra.scratch', withdrawals: 'vyra.withdrawals', referral: 'vyra.referral', user: 'vyra.user', isLoggedIn: 'vyra.isLoggedIn' };
+const COINS_PER_NAIRA = 20;
+const MIN_WITHDRAWAL = 100000;
 const GIFT_CARDS = [
   { id: 'mtn_1000', name: 'MTN Airtime ₦1,000', cost: 20000, icon: '📱', type: 'Airtime' },
   { id: 'airtel_1000', name: 'Airtel Airtime ₦1,000', cost: 20000, icon: '📱', type: 'Airtime' },
@@ -194,7 +183,7 @@ export default function App() {
           <Text style={styles.sectionTitle}>HISTORY</Text>
           {withdrawals.map(w=><View key={w.id} style={styles.history}><View style={{flex:1}}><Text style={styles.leaderName}>{w.method}</Text><Text style={styles.muted}>{w.details}</Text></View><Text style={styles.leaderCoins}>{money(w.amount)}</Text></View>)}
         </> : <>
-          <Text style={styles.pageTitle}>Gift Shop 🎁</Text>
+          <Text style={styles.pageTitle}>Gift Shop 🎁 - 9 Items</Text>
           <View style={styles.walletCard}><Text style={styles.muted}>YOUR BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()} 🪙</Text><Text style={styles.naira}>{money(coins)}</Text></View>
           {GIFT_CARDS.map(item=>{
             const canAfford = coins >= item.cost;
@@ -254,4 +243,5 @@ const styles=StyleSheet.create({
   spin:{marginHorizontal:14,marginTop:6,backgroundColor:CARD,borderRadius:14,borderWidth:1,borderColor:'#755F15',padding:14,alignItems:'center'},
   invite:{margin:14,backgroundColor:'#332A08',borderColor:GOLD,borderWidth:1,borderRadius:15,padding:16,alignItems:'center'},
   inviteTitle:{color:GOLD,fontSize:16,fontWeight:'900'},
-  inviteSub:{color:'#E5D88D',fontSize:12,
+  inviteSub:{color:'#E5D88D',fontSize:12,marginTop:5},
+  sectionTitle:{color:TEXT,fontWeig
