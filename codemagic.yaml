@@ -17,29 +17,12 @@ workflows:
         script: |
           set -e
           npx expo prebuild --platform android --clean
-          echo "BEFORE:"
-          grep -n "kotlinVersion" android/build.gradle || true
-      - name: Force Kotlin 1.9.25 everywhere
-        script: |
-          set -e
-          echo "=== PATCHING FOR MAC ==="
-          sed -i.bak "s/1.9.24/1.9.25/g" android/build.gradle
-          sed -i.bak "s/1.9.23/1.9.25/g" android/build.gradle || true
-          rm -f android/build.gradle.bak
-          echo "kotlinVersion=1.9.25" >> android/gradle.properties
-          echo "kotlin.version=1.9.25" >> android/gradle.properties
-          find node_modules -name "*.gradle" -exec sed -i.bak "s/1.9.24/1.9.25/g" {} \; || true
-          find node_modules -name "*.bak" -delete || true
-          rm -f android/app/src/main/res/values/splash_colors.xml || true
-          echo "AFTER:"
-          grep -n "kotlinVersion" android/build.gradle
       - name: Build Android debug APK
         script: |
           set -e
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
           cd android
           chmod +x gradlew
-          ./gradlew --stop || true
-          ./gradlew assembleDebug --no-daemon -PkotlinVersion=1.9.25
+          ./gradlew assembleDebug --no-daemon
     artifacts:
       - android/app/build/outputs/apk/debug/*.apk
