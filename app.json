@@ -7,23 +7,6 @@
     "userInterfaceStyle": "dark",
     "android": {
       "package": "com.vyrarewards.earn"
-    },
-    "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "compileSdkVersion": 34,
-            "targetSdkVersion": 34
-          }
-        }
-      ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-9958539812897899~1555530622"
-        }
-      ]
-    ]
+    }
   }
 }
