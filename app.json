@@ -13,31 +13,14 @@
       "resizeMode": "contain"
     },
     "android": {
-      "package": "com.vyrarewards.earn",
-      "icon": "./assets/icon.png",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#000000"
-      }
+      "package": "com.vyrarewards.earn"
     },
     "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "1.9.25"
-          }
-        }
-      ],
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-9958539812897899~1555530622"
-        }
-      ]
+      ["expo-build-properties", { "android": { "kotlinVersion": "1.9.25" } }],
+      ["react-native-google-mobile-ads", { "androidAppId": "ca-app-pub-9958539812897899~1555530622" }]
     ]
   },
   "react-native-google-mobile-ads": {
     "android_app_id": "ca-app-pub-9958539812897899~1555530622"
   }
-          }
+}
