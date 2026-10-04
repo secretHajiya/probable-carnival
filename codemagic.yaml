@@ -7,6 +7,7 @@ workflows:
       vars:
         PACKAGE_NAME: "com.vyrarewards.earn"
       node: 20.18.1
+      java: 17
     scripts:
       - name: Install dependencies
         script: |
@@ -16,6 +17,12 @@ workflows:
         script: |
           set -e
           npx expo prebuild --platform android --clean
+      - name: Fix Kotlin Version
+        script: |
+          set -e
+          sed -i.bak "s/1.9.24/1.9.25/g" android/build.gradle
+          mkdir -p android/app/src/main/res/values
+          echo '<resources><color name="splashscreen_background">#ffffff</color></resources>' > android/app/src/main/res/values/splash_colors.xml
       - name: Build Android debug APK
         script: |
           set -e
