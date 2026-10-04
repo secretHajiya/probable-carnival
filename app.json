@@ -1,11 +1,10 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-
-export default function App() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-      <Text style={{ color: '#fff', fontSize: 22, fontWeight: 'bold' }}>Vyra Rewards Pro</Text>
-      <Text style={{ color: '#fff', marginTop: 10 }}>APK Ready!</Text>
-    </View>
-  );
+{
+  "expo": {
+    "name": "Vyra Rewards Pro",
+    "slug": "vyra-rewards-pro",
+    "version": "1.0.0",
+    "android": {
+      "package": "com.vyrarewards.earn"
+    }
+  }
 }
