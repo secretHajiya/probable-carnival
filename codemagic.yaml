@@ -13,7 +13,7 @@ workflows:
           test -f App.tsx
           test -f app.json
           test -f package.json
-          node -e "const p=require('./package.json'); if(p.dependencies.expo !== '~51.0.32') process.exit(1); if(p.dependencies['react-native-google-mobile-ads'] !== '^14.12.1') process.exit(1);"
+          node -e "const p=require('./package.json'); if(p.dependencies.expo !== '~51.0.32') process.exit(1); if(p.dependencies['react-native-google-mobile-ads'] !== '14.11.0') process.exit(1);"
       - name: Install dependencies
         script: |
           npm install
