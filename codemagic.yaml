@@ -24,7 +24,6 @@ scripts:
   - name: Set Kotlin 1.9.25
     script: |
       set -e
-
       echo "Forcing Kotlin version to 1.9.25"
 
       if [ -f android/gradle.properties ]; then
@@ -37,18 +36,14 @@ scripts:
         echo "kotlinVersion=1.9.25" > android/gradle.properties
       fi
 
-      echo "Kotlin configuration:"
       grep "kotlinVersion" android/gradle.properties || true
 
   - name: Build Android debug APK
     script: |
       set -e
-
       echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-
       cd android
       chmod +x gradlew
-
       ./gradlew --stop || true
       ./gradlew assembleDebug --no-daemon
 
