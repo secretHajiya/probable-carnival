@@ -1,4 +1,3 @@
-
 {
   "expo": {
     "name": "Vyra Rewards Pro",
@@ -15,6 +14,14 @@
       "package": "com.vyrarewards.earn"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {
