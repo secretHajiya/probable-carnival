@@ -17,30 +17,27 @@ workflows:
         script: |
           set -e
           npx expo prebuild --platform android --clean
+          echo "BEFORE PATCH:"
+          grep -n "kotlinVersion" android/build.gradle || true
       - name: Force Kotlin 1.9.25 everywhere
         script: |
           set -e
-          echo "Patching..."
-          ls android/build.gradle
-          # Patch build.gradle
-          python3 << 'PY'
-          import pathlib
-          p=pathlib.Path("android/build.gradle")
-          txt=p.read_text()
-          txt=txt.replace("1.9.24","1.9.25").replace("1.9.23","1.9.25")
-          if "kotlinVersion" not in txt:
-              txt=txt.replace("ext {", "ext {\n        kotlinVersion = \"1.9.25\"\n")
-          p.write_text(txt)
-          print("Patched android/build.gradle")
-          PY
-          # Patch gradle.properties
+          echo "=== PATCHING ==="
+          # 1. Patch android/build.gradle
+          sed -i "s/1.9.24/1.9.25/g" android/build.gradle
+          sed -i "s/1.9.23/1.9.25/g" android/build.gradle || true
+          # 2. Force in gradle.properties
+          echo "" >> android/gradle.properties
           echo "kotlinVersion=1.9.25" >> android/gradle.properties
           echo "kotlin.version=1.9.25" >> android/gradle.properties
-          cat android/gradle.properties
-          cat android/build.gradle | grep -n "kotlin" | head -20
-          # Patch node_modules
-          find node_modules/expo-modules-core -name "*.gradle" -exec sed -i "s/1.9.24/1.9.25/g" {} \; || true
+          echo "kotlinVersion overridden"
+          # 3. Patch expo-modules-core build.gradle inside node_modules
+          find node_modules -type f -name "*.gradle" -exec sed -i "s/1.9.24/1.9.25/g" {} \; || true
+          # 4. Remove duplicate splash that also breaks build
           rm -f android/app/src/main/res/values/splash_colors.xml || true
+          echo "AFTER PATCH:"
+          grep -n "kotlinVersion\|1.9.25\|1.9.24" android/build.gradle | head -30
+          cat android/gradle.properties | tail -10
       - name: Build Android debug APK
         script: |
           set -e
@@ -48,6 +45,6 @@ workflows:
           cd android
           chmod +x gradlew
           ./gradlew --stop || true
-          ./gradlew assembleDebug --no-daemon -PkotlinVersion=1.9.25 -Pkotlin.version=1.9.25 --stacktrace
+          ./gradlew assembleDebug --no-daemon -PkotlinVersion=1.9.25 -Pkotlin.version=1.9.25
     artifacts:
       - android/app/build/outputs/apk/debug/*.apk
