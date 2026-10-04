@@ -1,30 +1,23 @@
-workflows:
-  vyra-apk:
-    name: Vyra Rewards Pro Android Debug APK
-    max_build_duration: 60
-    instance_type: mac_mini_m2
-    environment:
-      vars:
-        PACKAGE_NAME: "com.vyrarewards.earn"
-      node: 20.18.1
-    scripts:
-      - name: Validate required files and dependency versions
-        script: |
-          test -f App.tsx
-          test -f app.json
-          test -f package.json
-          node -e "const p=require('./package.json'); if(p.dependencies.expo !== '~51.0.32') process.exit(1); if(p.dependencies['react-native-google-mobile-ads'] !== '14.11.0') process.exit(1);"
-      - name: Install dependencies
-        script: |
-          npm install
-      - name: Generate native Android project
-        script: |
-          npx expo prebuild --platform android --clean
-      - name: Build debug APK
-        script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
-    artifacts:
-      - android/app/build/outputs/apk/debug/*.apk
+
+{
+  "name": "vyra-rewards-pro",
+  "version": "1.0.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "expo": "~52.0.0",
+    "expo-constants": "~17.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.5",
+    "react-native-google-mobile-ads": "14.11.0"
+  },
+  "devDependencies": {
+    "babel-preset-expo": "~12.0.0",
+    "typescript": "~5.3.3"
+  }
+}
