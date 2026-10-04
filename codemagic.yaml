@@ -13,23 +13,9 @@ workflows:
         script: |
           set -e
           npm install
-          npm install expo-build-properties@~0.13.1 --save-dev
       - name: Generate native Android project
         script: |
           set -e
-          node - <<'NODE'
-          const fs=require('fs');
-          let cfg = fs.existsSync('app.json')? 'app.json' : null;
-          if (cfg) {
-            let j=JSON.parse(fs.readFileSync(cfg,'utf8'));
-            let expo=j.expo||j;
-            expo.plugins=expo.plugins||[];
-            expo.plugins=expo.plugins.filter(p=> (Array.isArray(p)?p[0]:p)!=='expo-build-properties');
-            expo.plugins.push(['expo-build-properties', { android: { kotlinVersion: '1.9.25' } }]);
-            if (j.expo) j.expo=expo; else j=expo;
-            fs.writeFileSync(cfg, JSON.stringify(j,null,2));
-          }
-          NODE
           npx expo prebuild --platform android --clean
       - name: Set Kotlin 1.9.25
         script: |
@@ -43,7 +29,7 @@ workflows:
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
           cd android
           chmod +x gradlew
-         ./gradlew --stop || true
-         ./gradlew assembleDebug --no-daemon
+          ./gradlew --stop || true
+          ./gradlew assembleDebug --no-daemon
     artifacts:
       - android/app/build/outputs/apk/debug/*.apk
