@@ -13,23 +13,49 @@ workflows:
         script: |
           set -e
           npm install
+          npm install expo-build-properties@~0.13.1 --save-dev
       - name: Generate native Android project
         script: |
           set -e
+          # Inject kotlinVersion plugin into app.json only in CI
+          node - <<'NODE'
+          const fs=require('fs');
+          let configPath = fs.existsSync('app.json')? 'app.json' : (fs.existsSync('app.config.json')? 'app.config.json' : null);
+          if (configPath) {
+            let raw=fs.readFileSync(configPath,'utf8');
+            let json=JSON.parse(raw);
+            let expo = json.expo || json;
+            expo.plugins = expo.plugins || [];
+            // remove old build-properties if exists
+            expo.plugins = expo.plugins.filter(p => {
+              const name = Array.isArray(p)? p[0] : p;
+              return name!== 'expo-build-properties';
+            });
+            expo.plugins.push(['expo-build-properties', { android: { kotlinVersion: '1.9.25' } }]);
+            if (json.expo) json.expo = expo; else json = expo;
+            fs.writeFileSync(configPath, JSON.stringify(json, null, 2));
+            console.log('Injected expo-build-properties kotlin 1.9.25 into', configPath);
+          } else {
+            console.log('No app.json found, will patch prebuild manually');
+          }
+          NODE
           npx expo prebuild --platform android --clean
       - name: Set Kotlin 1.9.25
         script: |
           set -e
-          echo "Forcing Kotlin version to 1.9.25"
+          echo "Forcing Kotlin 1.9.25 in all gradle files"
           sed -i.bak "s/1.9.24/1.9.25/g" android/build.gradle || true
-          find android -name "*.gradle" -type f -exec sed -i.bak "s/1.9.24/1.9.25/g" {} \; || true
+          find android -name "*.gradle" -exec sed -i.bak "s/1.9.24/1.9.25/g" {} \; || true
+          find node_modules/expo-modules-core -name "*.gradle" -exec sed -i.bak "s/1.9.24/1.9.25/g" {} \; || true
           rm -f android/app/src/main/res/values/splash_colors.xml
+          grep -n "kotlinVersion" android/build.gradle || true
       - name: Build Android debug APK
         script: |
           set -e
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+         ./gradlew --stop || true
+         ./gradlew assembleDebug --no-daemon --stacktrace
     artifacts:
       - android/app/build/outputs/apk/debug/*.apk
