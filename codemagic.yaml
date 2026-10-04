@@ -17,27 +17,22 @@ workflows:
         script: |
           set -e
           npx expo prebuild --platform android --clean
-          echo "BEFORE PATCH:"
+          echo "BEFORE:"
           grep -n "kotlinVersion" android/build.gradle || true
       - name: Force Kotlin 1.9.25 everywhere
         script: |
           set -e
-          echo "=== PATCHING ==="
-          # 1. Patch android/build.gradle
-          sed -i "s/1.9.24/1.9.25/g" android/build.gradle
-          sed -i "s/1.9.23/1.9.25/g" android/build.gradle || true
-          # 2. Force in gradle.properties
-          echo "" >> android/gradle.properties
+          echo "=== PATCHING FOR MAC ==="
+          sed -i.bak "s/1.9.24/1.9.25/g" android/build.gradle
+          sed -i.bak "s/1.9.23/1.9.25/g" android/build.gradle || true
+          rm -f android/build.gradle.bak
           echo "kotlinVersion=1.9.25" >> android/gradle.properties
           echo "kotlin.version=1.9.25" >> android/gradle.properties
-          echo "kotlinVersion overridden"
-          # 3. Patch expo-modules-core build.gradle inside node_modules
-          find node_modules -type f -name "*.gradle" -exec sed -i "s/1.9.24/1.9.25/g" {} \; || true
-          # 4. Remove duplicate splash that also breaks build
+          find node_modules -name "*.gradle" -exec sed -i.bak "s/1.9.24/1.9.25/g" {} \; || true
+          find node_modules -name "*.bak" -delete || true
           rm -f android/app/src/main/res/values/splash_colors.xml || true
-          echo "AFTER PATCH:"
-          grep -n "kotlinVersion\|1.9.25\|1.9.24" android/build.gradle | head -30
-          cat android/gradle.properties | tail -10
+          echo "AFTER:"
+          grep -n "kotlinVersion" android/build.gradle
       - name: Build Android debug APK
         script: |
           set -e
@@ -45,6 +40,6 @@ workflows:
           cd android
           chmod +x gradlew
           ./gradlew --stop || true
-          ./gradlew assembleDebug --no-daemon -PkotlinVersion=1.9.25 -Pkotlin.version=1.9.25
+          ./gradlew assembleDebug --no-daemon -PkotlinVersion=1.9.25
     artifacts:
       - android/app/build/outputs/apk/debug/*.apk
