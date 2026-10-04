@@ -1,26 +1,40 @@
+workflows:
+vyra-apk:
+name: Vyra Rewards Pro Android Debug APK
+max_build_duration: 60
+instance_type: mac_mini_m2
 
-{
-  "expo": {
-    "name": "Vyra Rewards Pro",
-    "slug": "vyra-rewards-pro",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
-    "splash": {
-      "backgroundColor": "#000000",
-      "resizeMode": "contain"
-    },
-    "android": {
-      "package": "com.vyrarewards.earn"
-    },
-    "plugins": [
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-9958539812897899~8572396012"
-        }
-      ]
-    ]
-  }
-}
+environment:
+  vars:
+    PACKAGE_NAME: "com.vyrarewards.earn"
+  node: 20.18.1
+
+scripts:
+  - name: Check project files
+    script: |
+      set -e
+      test -f App.tsx
+      test -f app.json
+      test -f package.json
+      test -f codemagic.yaml
+
+  - name: Install dependencies
+    script: |
+      set -e
+      npm install
+
+  - name: Generate native Android project
+    script: |
+      set -e
+      npx expo prebuild --platform android --clean
+
+  - name: Build Android debug APK
+    script: |
+      set -e
+      echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      cd android
+      chmod +x gradlew
+      ./gradlew assembleDebug
+
+artifacts:
+  - android/app/build/outputs/apk/debug/*.apk
