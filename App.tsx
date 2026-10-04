@@ -4,9 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import mobileAds, { AdEventType, BannerAd, BannerAdSize, InterstitialAd, RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 const IDS = {
-  banner: TestIds.BANNER,
-  interstitial: TestIds.INTERSTITIAL,
-  rewarded: TestIds.REWARDED,
+  banner: 'ca-app-pub-9958539812897899/2577972441',
+  interstitial: 'ca-app-pub-9958539812897899/4358011936',
+  rewarded: 'ca-app-pub-9958539812897899/7027357556',
 };
 const STORE = { coins: 'vyra.coins', streak: 'vyra.streak', lastCheckin: 'vyra.lastCheckin', ads: 'vyra.adsWatched', spin: 'vyra.spinDate', scratch: 'vyra.scratch', withdrawals: 'vyra.withdrawals', referral: 'vyra.referral', user: 'vyra.user', isLoggedIn: 'vyra.isLoggedIn' };
 const COINS_PER_NAIRA = 20;
