@@ -7,11 +7,10 @@ workflows:
       node: 20.18.1
       java: 17
     scripts:
-      - name: Install
-        script: npm install --legacy-peer-deps
-      - name: Build APK
+      - name: Install and Build APK
         script: |
-          CI=1 npx expo prebuild --platform android --clean
+          npm install --legacy-peer-deps
+          npx expo prebuild --platform android --clean
           cd android && ./gradlew assembleRelease
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
