@@ -21,8 +21,10 @@ workflows:
         script: |
           set -e
           sed -i.bak "s/1.9.24/1.9.25/g" android/build.gradle
-          mkdir -p android/app/src/main/res/values
-          echo '<resources><color name="splashscreen_background">#ffffff</color></resources>' > android/app/src/main/res/values/splash_colors.xml
+          rm -f android/app/src/main/res/values/splash_colors.xml
+          if ! grep -q "splashscreen_background" android/app/src/main/res/values/colors.xml; then
+            sed -i.bak "s|</resources>|    <color name=\"splashscreen_background\">#ffffff</color>\n</resources>|" android/app/src/main/res/values/colors.xml
+          fi
       - name: Build Android debug APK
         script: |
           set -e
