@@ -3,7 +3,11 @@
     "name": "Vyra Rewards",
     "slug": "vyra-rewards-pro",
     "version": "1.0.0",
-    "android": { "package": "com.vyrarewards.earn" },
+    "icon": "./assets/icon.png",
+    "android": { 
+      "package": "com.vyrarewards.earn",
+      "icon": "./assets/icon.png"
+    },
     "plugins": [
       ["expo-build-properties", { "android": { "kotlinVersion": "1.9.25" } }],
       ["react-native-google-mobile-ads", { "androidAppId": "ca-app-pub-9958539812897899~1555539022" }]
