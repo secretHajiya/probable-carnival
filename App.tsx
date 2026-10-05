@@ -284,7 +284,7 @@ export default function App() {
                     if (adsWatched<5) return Alert.alert('Verification', 'Watch 5 ads first');
                     Alert.alert('Redeem?', `${item.name} for ${item.cost}?`, [{text:'Cancel'},{text:'Redeem', onPress: async()=>{
                       saveCoins(coins-item.cost);
-                      const w = {id:String(Date.now()), amount:item., amount:item.cost, method:item.type, details:item.name, date:new Date().toLocaleDateString(), status:'Pending'};
+                                            const w = {id:String(Date.now()), amount:item.cost, method:item.type, details:item.name, date:new Date().toLocaleDateString(), status:'Pending'};
                       const next=[w,...withdrawals]; setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next));
                       Alert.alert('Success', 'Gift redeemed!');
                     }}]);
