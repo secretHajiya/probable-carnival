@@ -5,10 +5,12 @@ import NetInfo from '@react-native-community/netinfo';
 import mobileAds, { AdEventType, BannerAd, BannerAdSize, InterstitialAd, RewardedAd, RewardedAdEventType } from 'react-native-google-mobile-ads';
 
 const IDS = {
-  banner: 'ca-app-pub-9958539812897899/2577972441',
+  appId: 'ca-app-pub-9958539812897899~1555539022',
+  banner: 'ca-app-pub-9958539812897899/2677972441',
   interstitial: 'ca-app-pub-9958539812897899/4358011936',
   rewarded: 'ca-app-pub-9958539812897899/7027357556',
 };
+
 const STORE = { coins: 'vyra.coins', streak: 'vyra.streak', lastCheckin: 'vyra.lastCheckin', ads: 'vyra.adsWatched', spin: 'vyra.spinDate', scratch: 'vyra.scratch', withdrawals: 'vyra.withdrawals', referral: 'vyra.referral', user: 'vyra.user', isLoggedIn: 'vyra.isLoggedIn', tapCount: 'vyra.tapCount' };
 const COINS_PER_NAIRA = 20;
 const MIN_WITHDRAWAL = 100000;
@@ -29,9 +31,11 @@ const money = (coins: number) => `₦${(coins / COINS_PER_NAIRA).toFixed(2)}`;
 type Withdrawal = { id: string; amount: number; method: string; details: string; date: string; status: string };
 
 export default function App() {
+  const [splash, setSplash] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginPhone, setLoginPhone] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
+  const [fullName, setFullName] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [enteredOtp, setEnteredOtp] = useState('');
@@ -57,8 +61,7 @@ export default function App() {
   const pulse = useMemo(() => new Animated.Value(1), []);
   const interstitial = useMemo(() => InterstitialAd.createForAdRequest(IDS.interstitial), []);
   const rewarded = useMemo(() => RewardedAd.createForAdRequest(IDS.rewarded), []);
-
-  useEffect(() => {
+    useEffect(() => {
     mobileAds().initialize();
     (async () => {
       try {
@@ -74,8 +77,9 @@ export default function App() {
         setWithdrawals(data[STORE.withdrawals]? JSON.parse(data[STORE.withdrawals]) : []);
         setReferral(data[STORE.referral] || `VYRA-${Math.floor(1000 + Math.random() * 9000)}`);
         setTapCount(Number(data[STORE.tapCount] || 0));
-        if (data[STORE.user]) { const u = JSON.parse(data[STORE.user]); setUserPhone(u.phone || u.email); }
+        if (data[STORE.user]) { const u = JSON.parse(data[STORE.user]); setUserPhone(u.phone || u.email); if(u.fullName) setFullName(u.fullName); }
       } catch {}
+      setTimeout(()=>setSplash(false), 1200);
     })();
     const i1 = interstitial.addAdEventListener(AdEventType.LOADED, () => setInterLoaded(true));
     const i2 = interstitial.addAdEventListener(AdEventType.CLOSED, () => { setInterLoaded(false); interstitial.load(); });
@@ -84,7 +88,7 @@ export default function App() {
     const r2 = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
       setCoins(c => { const n = c + 100; AsyncStorage.setItem(STORE.coins, String(n)); return n; });
       setAdsWatched(c => { const n = c + 1; AsyncStorage.setItem(STORE.ads, String(n)); return n; });
-      Alert.alert('🎉 Bonus!', '+100 coins for watching Ad!');
+      Alert.alert('Bonus', '+100 coins for watching Ad!');
     });
     const r3 = rewarded.addAdEventListener(AdEventType.CLOSED, () => { setRewardLoaded(false); setAdBusy(false); rewarded.load(); });
     const r4 = rewarded.addAdEventListener(AdEventType.ERROR, () => { setTimeout(()=>rewarded.load(), 2000); });
@@ -99,19 +103,20 @@ export default function App() {
 
   const sendOtp = async () => {
     const netState = await NetInfo.fetch();
-    if (!netState.isConnected) return Alert.alert("📵 Babu Data", "Ka kunna data don samun OTP");
-    if (!loginPhone &&!loginEmail) return Alert.alert('Required', 'Saka Phone ko Gmail');
-    if (loginPhone && loginPhone.length < 11) return Alert.alert('Invalid', 'Lambar waya ba daidai ba ce - 11 digits');
-    if (loginEmail &&!loginEmail.includes('@')) return Alert.alert('Invalid', 'Email ba daidai ba ne');
+    if (!netState.isConnected) return Alert.alert("No Internet", "Please turn on data to receive OTP");
+    if (!fullName || fullName.length < 3) return Alert.alert('Required', 'Enter your full name');
+    if (!loginPhone &&!loginEmail) return Alert.alert('Required', 'Enter phone number or email');
+    if (loginPhone && loginPhone.length < 11) return Alert.alert('Invalid', 'Phone number must be 11 digits');
+    if (loginEmail &&!loginEmail.includes('@')) return Alert.alert('Invalid', 'Enter valid email address');
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     setGeneratedOtp(code);
     setOtpSent(true);
-    Alert.alert('📩 OTP CODE', `Code dinka shine: ${code}\n\nAn tura zuwa: ${loginPhone || loginEmail}\n\n(Test mode - nan gaba zamu tura SMS na gaske)`);
+    Alert.alert('OTP Code', `Your verification code is: ${code}\n\nSent to: ${loginPhone || loginEmail}`);
   };
 
   const verifyOtpAndLogin = async () => {
-    if (enteredOtp!== generatedOtp) return Alert.alert('❌ Ba daidai ba!', 'OTP ba daidai ba ne - sake gwadawa');
-    await AsyncStorage.setItem(STORE.user, JSON.stringify({ phone: loginPhone, email: loginEmail }));
+    if (enteredOtp!== generatedOtp) return Alert.alert('Invalid Code', 'Incorrect OTP, please try again');
+    await AsyncStorage.setItem(STORE.user, JSON.stringify({ phone: loginPhone, email: loginEmail, fullName }));
     await AsyncStorage.setItem(STORE.isLoggedIn, 'true');
     setUserPhone(loginPhone || loginEmail);
     setIsLoggedIn(true);
@@ -124,10 +129,7 @@ export default function App() {
 
   const handleTap = async () => {
     const netState = await NetInfo.fetch();
-    if (!netState.isConnected) {
-      Alert.alert("📵 Babu Data!", "Ka kunna data! Idan offline baka kawo mana kudi ba!");
-      return;
-    }
+    if (!netState.isConnected) return;
     const newCoins = coins + 1;
     saveCoins(newCoins);
     const newCount = tapCount + 1;
@@ -138,14 +140,12 @@ export default function App() {
       await AsyncStorage.setItem(STORE.tapCount, '0');
       if (rewardLoaded) { setAdBusy(true); rewarded.show().catch(()=>{ setAdBusy(false); }); }
       else if (interLoaded) { interstitial.show().catch(()=>{}); }
-    }
-  };
-
-  const watchAd = () => { if (!rewardLoaded || adBusy) return; setAdBusy(true); setRewardLoaded(false); rewarded.show().catch(() => { setAdBusy(false); rewarded.load(); }); };
+      else { saveCoins(newCoins + 100); }
+     const watchAd = () => { if (!rewardLoaded || adBusy) return; setAdBusy(true); setRewardLoaded(false); rewarded.show().catch(() => { setAdBusy(false); rewarded.load(); }); };
   const checkin = async () => {
     const netState = await NetInfo.fetch();
-    if (!netState.isConnected) return Alert.alert("Babu Data", "Ka kunna data don Check-in");
-    if (lastCheckin === todayKey()) return Alert.alert('Already claimed', 'Come tomorrow');
+    if (!netState.isConnected) return Alert.alert("No Internet", "Turn on data for check-in");
+    if (lastCheckin === todayKey()) return Alert.alert('Already claimed', 'Come back tomorrow');
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     const nextStreak = lastCheckin === yesterday? (streak % 7) + 1 : 1;
     const reward = streakRewards[nextStreak - 1];
@@ -163,47 +163,60 @@ export default function App() {
   const scratch = async () => {
     const saved = await AsyncStorage.getItem(STORE.scratch);
     const count = saved?.startsWith(todayKey() + ':')? Number(saved.split(':')[1]) : 0;
-    if (count >= 3) return Alert.alert('Limit', '3 per day');
+    if (count >= 3) return Alert.alert('Limit Reached', '3 scratches per day');
     const reward = Math.floor(10 + Math.random() * 41);
     await AsyncStorage.setItem(STORE.scratch, `${todayKey()}:${count+1}`);
     setScratchCount(count+1); addCoins(reward); Alert.alert('Scratch', `+${reward} coins!`);
   };
-  const invite = async () => { try { await Share.share({ message: `Join Vyra Rewards! Code: ${referral}` }); } catch {} };
+  const invite = async () => { try { await Share.share({ message: `Join Vyra Rewards! Use my code: ${referral}` }); } catch {} };
   const submitWithdrawal = async () => {
     const value = Number(amount);
-    if (adsWatched < 5) return Alert.alert('Verify', 'Watch 5 ads first');
-    if (!value || value < MIN_WITHDRAWAL || value > coins) return Alert.alert('Invalid', `Minimum is ${MIN_WITHDRAWAL.toLocaleString()} coins`);
+    if (adsWatched < 5) return Alert.alert('Verification Required', 'Please watch 5 ads first to verify');
+    if (!value || value < MIN_WITHDRAWAL || value > coins) return Alert.alert('Invalid Amount', `Minimum is ${MIN_WITHDRAWAL.toLocaleString()} coins`);
     let details = method.startsWith('Airtime')? phone : method === 'Bank Transfer'? `${bank} / ${account}` : account;
-    if (!details.trim()) return Alert.alert('Missing', 'Enter details');
-    const item: Withdrawal = { id: String(Date.now()), amount: value, method, details, date: new Date().toLocaleDateString(), status: 'Pending' };
+    if (!details.trim()) return Alert.alert('Missing Details', 'Enter withdrawal details');
+    const item = { id: String(Date.now()), amount: value, method, details, date: new Date().toLocaleDateString(), status: 'Pending' };
     const next = [item,...withdrawals];
     setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next));
-    saveCoins(coins - value); Alert.alert('Submitted', 'Withdrawal pending.');
+    saveCoins(coins - value); Alert.alert('Submitted', 'Withdrawal request pending - 24h review.');
   };
+
+  if (splash) {
+    return (
+      <View style={styles.splashRoot}>
+        <StatusBar barStyle="light-content" backgroundColor={BG} />
+        <Text style={{fontSize:60}}>⚡</Text>
+        <Text style={styles.brand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text>
+        <Text style={styles.muted}>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!isLoggedIn) {
     return (
       <View style={styles.loginRoot}>
         <StatusBar barStyle="light-content" backgroundColor={BG} />
         <Text style={styles.loginBrand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text>
-        <Text style={styles.loginSub}>Secure Login - OTP Verification</Text>
+        <Text style={styles.loginSub}>Create Account - Secure OTP Verification</Text>
         <View style={styles.loginCard}>
           {!otpSent? (
             <>
-              <Text style={styles.label}>Phone Number</Text>
-              <TextInput value={loginPhone} onChangeText={setLoginPhone} keyboardType="phone-pad" style={styles.input} placeholder="08012345678" placeholderTextColor="#777" />
-              <Text style={styles.label}>Gmail (Optional)</Text>
-              <TextInput value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" style={styles.input} placeholder="example@gmail.com" placeholderTextColor="#777" />
-              <TouchableOpacity onPress={sendOtp} style={styles.primaryButton}><Text style={styles.primaryText}>SEND OTP CODE</Text></TouchableOpacity>
-              <Text style={[styles.muted,{textAlign:'center',marginTop:12}]}>Za mu tura maka code na 4 digits</Text>
+              <Text style={styles.label}>Full Name *</Text>
+              <TextInput value={fullName} onChangeText={setFullName} style={styles.input} placeholder="John Doe" placeholderTextColor="#777" />
+              <Text style={styles.label}>Phone Number *</Text>
+              <TextInput value={loginPhone} onChangeText={setLoginPhone} keyboardType="phone-pad" style={styles.input} placeholder="08012345678" placeholderTextColor="#777" maxLength={11} />
+              <Text style={styles.label}>Email Address *</Text>
+              <TextInput value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" style={styles.input} placeholder="example@gmail.com" placeholderTextColor="#777" autoCapitalize="none" />
+              <TouchableOpacity onPress={sendOtp} style={styles.primaryButton}><Text style={styles.primaryText}>CREATE ACCOUNT & SEND OTP</Text></TouchableOpacity>
+              <Text style={[styles.muted,{textAlign:'center',marginTop:12}]}>We will send you a 4-digit verification code</Text>
             </>
           ) : (
             <>
-              <Text style={[styles.muted,{textAlign:'center',marginBottom:10}]}>Code an tura zuwa {loginPhone || loginEmail}</Text>
-              <Text style={styles.label}>Shigar da OTP - Code: {generatedOtp} (Test)</Text>
+              <Text style={[styles.muted,{textAlign:'center',marginBottom:10}]}>Code sent to {loginPhone || loginEmail}</Text>
+              <Text style={styles.label}>Enter OTP Code</Text>
               <TextInput value={enteredOtp} onChangeText={setEnteredOtp} keyboardType="number-pad" style={[styles.input,{fontSize:22, letterSpacing:10, textAlign:'center', fontWeight:'900'}]} placeholder="1234" placeholderTextColor="#777" maxLength={4} />
-              <TouchableOpacity onPress={verifyOtpAndLogin} style={styles.primaryButton}><Text style={styles.primaryText}>VERIFY & LOGIN</Text></TouchableOpacity>
-              <TouchableOpacity onPress={()=>setOtpSent(false)} style={{marginTop:12}}><Text style={{color:GOLD, textAlign:'center', fontWeight:'700'}}>↩ Sake tura Code / Canza Number</Text></TouchableOpacity>
+              <TouchableOpacity onPress={verifyOtpAndLogin} style={styles.primaryButton}><Text style={styles.primaryText}>VERIFY & CONTINUE</Text></TouchableOpacity>
+              <TouchableOpacity onPress={()=>setOtpSent(false)} style={{marginTop:12}}><Text style={{color:GOLD, textAlign:'center', fontWeight:'700'}}>Change Details</Text></TouchableOpacity>
             </>
           )}
         </View>
@@ -217,119 +230,25 @@ export default function App() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={BG} />
-      <View style={styles.header}><View><Text style={styles.brand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text><Text style={styles.muted}>{userPhone} • 20 coins = ₦1</Text></View><TouchableOpacity onPress={async()=>{await AsyncStorage.removeItem(STORE.isLoggedIn); setIsLoggedIn(false);}} style={styles.avatar}><Text style={{color:GOLD,fontWeight:'900'}}>V</Text></TouchableOpacity></View>
+      <View style={styles.header}><View><Text style={styles.brand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text><Text style={styles.muted}>{userPhone} • 20 coins = ₦1</Text></View><TouchableOpacity onPress={async()=>{await AsyncStorage.removeItem(STORE.isLoggedIn); setIsLoggedIn(false);}} style={styles.avatar}><Text style={{color:GOLD,fontWeight:'900'}}>LOGOUT</Text></TouchableOpacity></View>
       <View style={styles.pills}><Pill text="WALLET" value={`${coins.toLocaleString()} 🪙`} /><Pill text="MIN" value={`₦5K`} color={GOLD} /><Pill text="RATE" value={`${COINS_PER_NAIRA}/₦1`} color={GOLD} /></View>
-      <ScrollView contentContainerStyle={{paddingBottom:20}} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{paddingBottom:120}} showsVerticalScrollIndicator={false}>
         {screen === 'home'? <>
-          <View style={styles.scoreCard}><Text style={styles.muted}>TOTAL SCORE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)} • Need {MIN_WITHDRAWAL.toLocaleString()} for ₦5,000</Text></View>
-          <View style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: '#1E1E2E', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: tapCount >= 40? '#ff4444' : '#343449' }}>
-            <Text style={{ color: 'white', textAlign: 'center', marginBottom: 6, fontWeight: 'bold', fontSize: 13 }}>🎯 {tapCount}/50 - {50 - tapCount} taps har Ad ya fito!</Text>
-            <View style={{ height: 14, backgroundColor: '#333', borderRadius: 10, overflow: 'hidden' }}>
-              <View style={{ height: '100%', width: `${(tapCount / 50) * 100}%`, backgroundColor: tapCount >= 40? '#ff4444' : '#00FF88', borderRadius: 10 }} />
-            </View>
-            {tapCount >= 40 && <Text style={{ color: '#ff4444', textAlign: 'center', marginTop: 6, fontSize: 11, fontWeight: '900' }}>🔥 KUSA! AD ZAI FITO!</Text>}
-          </View>
-          <TouchableOpacity activeOpacity={0.7} onPress={handleTap}>
-            <Animated.View style={[styles.tapCircle,{transform:[{scale:pulse}]}]}>
-              <Text style={styles.tapSmall}>VYRA</Text><Text style={styles.tapTitle}>TAP TO</Text><Text style={styles.tapTitle}>EARN</Text><Text style={styles.tapSmall}>+1 COIN</Text>
-            </Animated.View>
-          </TouchableOpacity>
-          <Text style={[styles.muted,{textAlign:'center',marginTop:10}]}>Tap 50 times - Ad tilas +100 Bonus!</Text>
-          <View style={styles.threeCards}><Action title="2X SPEED" subtitle="Soon" onPress={() => Alert.alert('Soon')} color={GOLD}/><Action title="WALLET" subtitle={`${money(coins)}`} onPress={() => setScreen('wallet')}/><Action title="SHOP" subtitle={`${GIFT_CARDS.length} gifts`} onPress={() => setScreen('shop')} color={GOLD}/></View>
-          <TouchableOpacity onPress={watchAd} disabled={!rewardLoaded || adBusy} style={[styles.watch,{backgroundColor:rewardLoaded &&!adBusy? GREEN : '#555566'}]}><Text style={styles.watchTitle}>{adBusy? 'LOADING…' : rewardLoaded? '▶ WATCH AD +50 COINS' : 'LOADING AD...'}</Text></TouchableOpacity>
-          <View style={styles.row}><Action title="DAILY CHECK-IN" onPress={checkin} disabled={lastCheckin === todayKey()}/><Action title="SCRATCH" subtitle={`${scratchCount}/3`} onPress={scratch} color={GOLD}/></View>
-          <TouchableOpacity onPress={spin} style={styles.spin}><Text style={styles.actionTitle}>🎡 SPIN & WIN</Text></TouchableOpacity>
-          <TouchableOpacity onPress={invite} style={styles.invite}><Text style={styles.inviteTitle}>✦ INVITE +200</Text><Text style={styles.inviteSub}>Code: {referral}</Text></TouchableOpacity>
-        </> : screen === 'wallet'? <>
-          <Text style={styles.pageTitle}>My Wallet - Min ₦5,000</Text>
-          <View style={styles.walletCard}><Text style={styles.muted}>BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()} 🪙</Text><Text style={styles.naira}>{money(coins)}</Text><Text style={styles.muted}>Rate: 20 coins = ₦1 • Minimum: 100,000 coins = ₦5,000</Text></View>
-          <Text style={styles.sectionTitle}>WITHDRAW</Text>
-          <View style={styles.methodRow}>{['Airtime - MTN','Airtime - Airtel','OPay','PalmPay','Bank Transfer'].map(m=><TouchableOpacity key={m} onPress={()=>setMethod(m)} style={[styles.method,{borderColor:method===m?GREEN:BORDER,backgroundColor:method===m?'#12362B':CARD}]}><Text style={{color:TEXT,fontSize:12}}>{m}</Text></TouchableOpacity>)}</View>
-          <Text style={styles.label}>Amount (Min 100,000)</Text><TextInput value={amount} onChangeText={setAmount} keyboardType="number-pad" style={styles.input} />
-          {method.startsWith('Airtime')? <><Text style={styles.label}>Phone</Text><TextInput value={phone} onChangeText={setPhone} style={styles.input} /></> : <><Text style={styles.label}>Account</Text><TextInput value={account} onChangeText={setAccount} style={styles.input} /></>}
-          <Text style={[styles.muted,{marginHorizontal:16,marginTop:8}]}>Ads: {adsWatched}/5 required • Balance: {coins}/{MIN_WITHDRAWAL}</Text>
-          <TouchableOpacity onPress={submitWithdrawal} disabled={adsWatched<5 || coins<MIN_WITHDRAWAL} style={[styles.primaryButton,{opacity:adsWatched<5||coins<MIN_WITHDRAWAL?0.45:1}]}><Text style={styles.primaryText}>REQUEST ₦5,000 WITHDRAWAL</Text></TouchableOpacity>
-          <Text style={styles.sectionTitle}>HISTORY</Text>
-          {withdrawals.map(w=><View key={w.id} style={styles.history}><View style={{flex:1}}><Text style={styles.leaderName}>{w.method}</Text><Text style={styles.muted}>{w.details}</Text></View><Text style={styles.leaderCoins}>{money(w.amount)}</Text></View>)}
-        </> : <>
-          <Text style={styles.pageTitle}>Gift Shop 🎁 - 9 Items</Text>
-          <View style={styles.walletCard}><Text style={styles.muted}>YOUR BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()} 🪙</Text><Text style={styles.naira}>{money(coins)}</Text></View>
-          {GIFT_CARDS.map(item=>{
-            const canAfford = coins >= item.cost;
-            return (
-              <View key={item.id} style={styles.shopItemNew}>
-                <View style={styles.shopIcon}><Text style={{fontSize:22}}>{item.icon}</Text></View>
-                <View style={{flex:1,marginLeft:12}}>
-                  <Text style={styles.leaderName}>{item.name}</Text>
-                  <Text style={styles.muted}>{item.cost.toLocaleString()} coins • {money(item.cost)}</Text>
-                </View>
-                             <TouchableOpacity onPress={()=>{
-                  if (!canAfford) return Alert.alert('Need more coins', `Need ${item.cost.toLocaleString()}, you have ${coins.toLocaleString()}`);
-                  if (adsWatched<5) return Alert.alert('Watch 5 ads first');
-                  Alert.alert('Redeem?', `${item.name} for ${item.cost} coins?`, [{text:'Cancel'},{text:'Redeem', onPress: async()=>{
-                    saveCoins(coins-item.cost);
-                    const w: Withdrawal = {id:String(Date.now()), amount:item.cost, method:item.type, details:item.name, date:new Date().toLocaleDateString(), status:'Pending'};
-                    const next=[w,...withdrawals]; setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next));
-                    Alert.alert('Success', 'Gift redeemed!');
-                  }}]);
-                }} style={[styles.redeemButton,{backgroundColor:canAfford?GREEN:'#444'}]}><Text style={styles.redeemText}>{canAfford?'REDEEM':'LOCKED'}</Text></TouchableOpacity>
-              </View>
-            );
-          })}
-        </>}
-      </ScrollView>
-      <View style={styles.bottomNav}><TouchableOpacity onPress={()=>setScreen('home')}><Text style={[styles.navText,screen==='home'&&{color:GREEN}]}>Home</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('wallet')}><Text style={[styles.navText,screen==='wallet'&&{color:GREEN}]}>Wallet</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('shop')}><Text style={[styles.navText,screen==='shop'&&{color:GREEN}]}>Shop</Text></TouchableOpacity></View>
-      <View style={styles.banner}><BannerAd unitId={IDS.banner} size={BannerAdSize.BANNER} requestOptions={{requestNonPersonalizedAdsOnly:true}} /></View>
-    </View>
-  );
-}
-const BG='#0A0A14', CARD='#1E1E2E', GREEN='#00FF88', GOLD='#FFD700', TEXT='#F5F5FA', MUTED='#9B9BAF', BORDER='#343449';
-const styles=StyleSheet.create({
-  loginRoot:{flex:1,backgroundColor:BG,justifyContent:'center',padding:20},
-  loginBrand:{color:TEXT,fontSize:32,fontWeight:'900',textAlign:'center'},
-  loginSub:{color:MUTED,fontSize:13,textAlign:'center',marginTop:8,marginBottom:20},
-  loginCard:{backgroundColor:CARD,borderRadius:16,padding:18},
-  root:{flex:1,backgroundColor:BG,paddingTop:8},
-  header:{paddingHorizontal:18,paddingVertical:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
-  brand:{color:TEXT,fontSize:20,fontWeight:'900'},
-  muted:{color:MUTED,fontSize:12},
-  avatar:{width:38,height:38,borderRadius:19,backgroundColor:CARD,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:GOLD},
-  pills:{flexDirection:'row',gap:7,paddingHorizontal:14,marginBottom:8},
-  pill:{flex:1,backgroundColor:CARD,borderRadius:12,padding:10},
-  pillValue:{fontSize:13,fontWeight:'900',marginTop:4},
-  scoreCard:{alignItems:'center',padding:12,marginHorizontal:16,backgroundColor:CARD,borderRadius:18},
-  score:{fontSize:34,fontWeight:'900',color:TEXT,marginVertical:3},
-  naira:{color:GREEN,fontSize:13,fontWeight:'700'},
-  tapCircle:{alignSelf:'center',marginTop:20,width:190,height:190,borderRadius:95,borderWidth:3,borderColor:GREEN,backgroundColor:'#10271F',alignItems:'center',justifyContent:'center',elevation:12},
-  tapSmall:{color:GREEN,fontSize:12,fontWeight:'900',letterSpacing:3},
-  tapTitle:{color:TEXT,fontSize:25,fontWeight:'900'},
-  threeCards:{flexDirection:'row',gap:8,paddingHorizontal:14,marginTop:4},
-  action:{flex:1,minHeight:66,backgroundColor:CARD,borderRadius:13,borderWidth:1,padding:10,alignItems:'center',justifyContent:'center',marginBottom:8},
-  actionTitle:{fontWeight:'900',fontSize:12,textAlign:'center'},
-  watch:{marginHorizontal:14,marginTop:10,borderRadius:15,padding:17,alignItems:'center'},
-  watchTitle:{color:BG,fontWeight:'900',fontSize:15},
-  row:{flexDirection:'row',gap:8,paddingHorizontal:14,marginTop:10},
-  spin:{marginHorizontal:14,marginTop:6,backgroundColor:CARD,borderRadius:14,borderWidth:1,borderColor:'#755F15',padding:14,alignItems:'center'},
-  invite:{margin:14,backgroundColor:'#332A08',borderColor:GOLD,borderWidth:1,borderRadius:15,padding:16,alignItems:'center'},
-  inviteTitle:{color:GOLD,fontSize:16,fontWeight:'900'},
-  inviteSub:{color:'#E5D88D',fontSize:12,marginTop:5},
-  sectionTitle:{color:TEXT,fontWeight:'900',fontSize:13,marginHorizontal:16,marginTop:14,marginBottom:8},
-  leaderName:{color:TEXT,fontSize:13,fontWeight:'700',flex:1},
-  leaderCoins:{color:GREEN,fontSize:12,fontWeight:'800'},
-  bottomNav:{flexDirection:'row',justifyContent:'space-around',paddingVertical:10,borderTopWidth:1,borderColor:BORDER},
-  navText:{color:MUTED,fontSize:13,fontWeight:'700'},
-  banner:{height:52,alignItems:'center',justifyContent:'center',backgroundColor:BG},
+          <View style={styles.scoreCard}><Text style={styles.muted}>TOTAL SCORE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)} • Need {MIN_WITHDRAWAL.toLocaleString()} for ₦5 }
+  };
+    banner:{height:60,alignItems:'center',justifyContent:'center',backgroundColor:BG},
   pageTitle:{fontSize:22,fontWeight:'900',color:TEXT,margin:16},
-  walletCard:{backgroundColor:CARD,borderRadius:16,marginHorizontal:14,padding:18,alignItems:'center'},
+  walletCard:{backgroundColor:CARD,borderRadius:16,marginHorizontal:14,padding:18,alignItems:'center', borderWidth:1, borderColor:BORDER},
   label:{color:MUTED,fontSize:12,marginHorizontal:16,marginTop:12,marginBottom:5},
   methodRow:{flexDirection:'row',flexWrap:'wrap',gap:7,marginHorizontal:14},
   method:{borderWidth:1,borderRadius:9,padding:9},
-  input:{marginHorizontal:14,backgroundColor:CARD,borderRadius:10,padding:12,color:TEXT,borderWidth:1,borderColor:BORDER},
+  input:{marginHorizontal:14,backgroundColor:CARD,borderRadius:10,padding:12,color:TEXT,borderWidth:1,borderColor:BORDER, marginTop:4},
   primaryButton:{marginHorizontal:14,marginTop:14,backgroundColor:GREEN,borderRadius:12,padding:14,alignItems:'center'},
   primaryText:{color:BG,fontWeight:'900'},
-  history:{flexDirection:'row',alignItems:'center',marginHorizontal:14,marginTop:8,padding:12,backgroundColor:CARD,borderRadius:10},
+  history:{flexDirection:'row',alignItems:'center',marginHorizontal:14,marginTop:8,padding:12,backgroundColor:CARD,borderRadius:10, borderWidth:1, borderColor:BORDER},
   shopItemNew:{flexDirection:'row',alignItems:'center',marginHorizontal:14,marginTop:8,padding:14,backgroundColor:CARD,borderRadius:12,borderWidth:1,borderColor:BORDER},
   shopIcon:{width:48,height:48,borderRadius:12,backgroundColor:'#2A2A40',alignItems:'center',justifyContent:'center'},
   redeemButton:{paddingHorizontal:14,paddingVertical:8,borderRadius:8},
   redeemText:{fontWeight:'900',fontSize:11,color:BG},
+  navItem:{flex:1, alignItems:'center'}
 });
