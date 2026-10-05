@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Animated, ScrollView, Share, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, ScrollView, Share, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import mobileAds, { AdEventType, BannerAd, BannerAdSize, InterstitialAd, RewardedAd, RewardedAdEventType } from 'react-native-google-mobile-ads';
@@ -56,6 +56,7 @@ export default function App() {
   const [phone, setPhone] = useState('');
   const [account, setAccount] = useState('');
   const [tapCount, setTapCount] = useState(0);
+  const [showBonusModal, setShowBonusModal] = useState(false);
   const pulse = useMemo(() => new Animated.Value(1), []);
   const interstitial = useMemo(() => InterstitialAd.createForAdRequest(IDS.interstitial), []);
   const rewarded = useMemo(() => RewardedAd.createForAdRequest(IDS.rewarded), []);
@@ -87,7 +88,8 @@ export default function App() {
     const r2 = rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
       setCoins(c => { const n = c + 100; AsyncStorage.setItem(STORE.coins, String(n)); return n; });
       setAdsWatched(c => { const n = c + 1; AsyncStorage.setItem(STORE.ads, String(n)); return n; });
-      Alert.alert('Bonus', '+100 coins!');
+      setTapCount(0); AsyncStorage.setItem(STORE.tapCount, '0');
+      Alert.alert('Bonus Earned!', '+100 coins for watching Ad!');
     });
     const r3 = rewarded.addAdEventListener(AdEventType.CLOSED, () => { setRewardLoaded(false); setAdBusy(false); rewarded.load(); });
     const r4 = rewarded.addAdEventListener(AdEventType.ERROR, () => { setTimeout(()=>rewarded.load(), 2000); });
@@ -99,8 +101,7 @@ export default function App() {
     anim.start();
     return () => { i1(); i2(); i3(); r1(); r2(); r3(); r4(); anim.stop(); };
   }, []);
-
-  const sendOtp = async () => {
+    const sendOtp = async () => {
     const netState = await NetInfo.fetch();
     if (!netState.isConnected) return Alert.alert("No Internet", "Please turn on data");
     if (!fullName || fullName.length < 3) return Alert.alert('Required', 'Enter your full name');
@@ -108,198 +109,106 @@ export default function App() {
     if (loginPhone && loginPhone.length < 11) return Alert.alert('Invalid', 'Phone must be 11 digits');
     if (loginEmail &&!loginEmail.includes('@')) return Alert.alert('Invalid', 'Enter valid email');
     const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(code);
-    setOtpSent(true);
+    setGeneratedOtp(code); setOtpSent(true);
     Alert.alert('OTP Code', `Your code is: ${code} sent to ${loginPhone || loginEmail}`);
   };
-
   const verifyOtpAndLogin = async () => {
     if (enteredOtp!== generatedOtp) return Alert.alert('Invalid Code', 'Incorrect OTP');
     await AsyncStorage.setItem(STORE.user, JSON.stringify({ phone: loginPhone, email: loginEmail, fullName }));
     await AsyncStorage.setItem(STORE.isLoggedIn, 'true');
-    setUserPhone(loginPhone || loginEmail);
-    setIsLoggedIn(true);
-    setOtpSent(false);
-    setEnteredOtp('');
+    setUserPhone(loginPhone || loginEmail); setIsLoggedIn(true); setOtpSent(false); setEnteredOtp('');
   };
-
   const saveCoins = (n) => { setCoins(n); AsyncStorage.setItem(STORE.coins, String(n)); };
   const addCoins = (n) => saveCoins(coins + n);
 
   const handleTap = async () => {
     const netState = await NetInfo.fetch();
     if (!netState.isConnected) return;
-    const newCoins = coins + 1;
-    saveCoins(newCoins);
-    const newCount = tapCount + 1;
-    setTapCount(newCount);
+    const newCoins = coins + 1; saveCoins(newCoins);
+    const newCount = tapCount + 1; setTapCount(newCount);
     await AsyncStorage.setItem(STORE.tapCount, String(newCount));
-    if (newCount >= 50) {
-      setTapCount(0);
-      await AsyncStorage.setItem(STORE.tapCount, '0');
-      if (rewardLoaded) { setAdBusy(true); rewarded.show().catch(()=>{ setAdBusy(false); }); }
-      else if (interLoaded) { interstitial.show().catch(()=>{}); }
-      else { saveCoins(newCoins + 100); }
-    }
+    if (newCount >= 50) { setShowBonusModal(true); }
   };
+  const handleWatchBonusAd = async () => {
+    setShowBonusModal(false);
+    if (rewardLoaded) { setAdBusy(true); rewarded.show().catch(()=>{ setAdBusy(false); setCoins(c=>c+20); setTapCount(0); }); }
+    else if (interLoaded) { interstitial.show().catch(()=>{}); setCoins(c=>c+50); setTapCount(0); Alert.alert('Bonus!', '+50 coins!'); }
+    else { setCoins(c=>c+25); setTapCount(0); Alert.alert('Bonus!', '+25 coins! Ad loading next time'); rewarded.load(); interstitial.load(); }
+  };
+  const handleSkipBonus = () => { setShowBonusModal(false); setTapCount(0); AsyncStorage.setItem(STORE.tapCount,'0'); saveCoins(coins + 5); };
 
   const watchAd = () => { if (!rewardLoaded || adBusy) return; setAdBusy(true); setRewardLoaded(false); rewarded.show().catch(() => { setAdBusy(false); rewarded.load(); }); };
   const checkin = async () => {
-    const netState = await NetInfo.fetch();
-    if (!netState.isConnected) return Alert.alert("No Internet", "Turn on data");
+    const netState = await NetInfo.fetch(); if (!netState.isConnected) return Alert.alert("No Internet", "Turn on data");
     if (lastCheckin === todayKey()) return Alert.alert('Already claimed', 'Come tomorrow');
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    const nextStreak = lastCheckin === yesterday? (streak % 7) + 1 : 1;
-    const reward = streakRewards[nextStreak - 1];
+    const nextStreak = lastCheckin === yesterday? (streak % 7) + 1 : 1; const reward = streakRewards[nextStreak - 1];
     setStreak(nextStreak); setLastCheckin(todayKey()); saveCoins(coins + reward);
     await AsyncStorage.multiSet([[STORE.streak, String(nextStreak)], [STORE.lastCheckin, todayKey()]]);
-    if (interLoaded) interstitial.show();
-    Alert.alert('Check-in', `+${reward} coins!`);
+    if (interLoaded) interstitial.show(); Alert.alert('Check-in', `+${reward} coins!`);
   };
   const spin = async () => {
     if (spinDate === todayKey()) return Alert.alert('Used', 'Come back tomorrow');
-    const reward = Math.floor(10 + Math.random() * 91);
-    setSpinDate(todayKey()); await AsyncStorage.setItem(STORE.spin, todayKey());
-    addCoins(reward); Alert.alert('Spin', `+${reward} coins!`);
+    const reward = Math.floor(10 + Math.random() * 91); setSpinDate(todayKey()); await AsyncStorage.setItem(STORE.spin, todayKey()); addCoins(reward); Alert.alert('Spin', `+${reward} coins!`);
   };
   const scratch = async () => {
-    const saved = await AsyncStorage.getItem(STORE.scratch);
-    const count = saved?.startsWith(todayKey() + ':')? Number(saved.split(':')[1]) : 0;
-    if (count >= 3) return Alert.alert('Limit', '3 per day');
-    const reward = Math.floor(10 + Math.random() * 41);
-    await AsyncStorage.setItem(STORE.scratch, `${todayKey()}:${count+1}`);
-    setScratchCount(count+1); addCoins(reward); Alert.alert('Scratch', `+${reward} coins!`);
+    const saved = await AsyncStorage.getItem(STORE.scratch); const count = saved?.startsWith(todayKey() + ':')? Number(saved.split(':')[1]) : 0;
+    if (count >= 3) return Alert.alert('Limit', '3 per day'); const reward = Math.floor(10 + Math.random() * 41);
+    await AsyncStorage.setItem(STORE.scratch, `${todayKey()}:${count+1}`); setScratchCount(count+1); addCoins(reward); Alert.alert('Scratch', `+${reward} coins!`);
   };
   const invite = async () => { try { await Share.share({ message: `Join Vyra Rewards! Code: ${referral}` }); } catch {} };
   const submitWithdrawal = async () => {
-    const value = Number(amount);
-    if (adsWatched < 5) return Alert.alert('Verification', 'Watch 5 ads first');
+    const value = Number(amount); if (adsWatched < 5) return Alert.alert('Verification', 'Watch 5 ads first');
     if (!value || value < MIN_WITHDRAWAL || value > coins) return Alert.alert('Invalid', `Min ${MIN_WITHDRAWAL.toLocaleString()}`);
-    let details = method.startsWith('Airtime')? phone : account;
-    if (!details.trim()) return Alert.alert('Missing', 'Enter details');
+    let details = method.startsWith('Airtime')? phone : account; if (!details.trim()) return Alert.alert('Missing', 'Enter details');
     const item = { id: String(Date.now()), amount: value, method, details, date: new Date().toLocaleDateString(), status: 'Pending' };
-    const next = [item,...withdrawals];
-    setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next));
-    saveCoins(coins - value); Alert.alert('Submitted', 'Pending 24h');
+    const next = [item,...withdrawals]; setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next)); saveCoins(coins - value); Alert.alert('Submitted', 'Pending 24h');
   };
 
-  if (splash) {
-    return (
-      <View style={styles.splashRoot}>
-        <StatusBar barStyle="light-content" backgroundColor={BG} />
-        <Text style={{fontSize:60}}>⚡</Text>
-        <Text style={styles.brand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text>
-        <Text style={styles.muted}>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <View style={styles.loginRoot}>
-        <StatusBar barStyle="light-content" backgroundColor={BG} />
-        <Text style={styles.loginBrand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text>
-        <Text style={styles.loginSub}>Create Account - OTP Verification</Text>
+  if (splash) { return (<View style={styles.splashRoot}><StatusBar barStyle="light-content" backgroundColor={BG} /><Text style={{fontSize:60}}>⚡</Text><Text style={styles.brand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text><Text style={styles.muted}>Loading...</Text></View>); }
+  if (!isLoggedIn) { return (
+      <View style={styles.loginRoot}><StatusBar barStyle="light-content" backgroundColor={BG} />
+        <Text style={styles.loginBrand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text><Text style={styles.loginSub}>Create Account - OTP Verification</Text>
         <View style={styles.loginCard}>
-          {!otpSent? (
-            <>
-              <Text style={styles.label}>Full Name *</Text>
-              <TextInput value={fullName} onChangeText={setFullName} style={styles.input} placeholder="John Doe" placeholderTextColor="#777" />
-              <Text style={styles.label}>Phone Number *</Text>
-              <TextInput value={loginPhone} onChangeText={setLoginPhone} keyboardType="phone-pad" style={styles.input} placeholder="08012345678" placeholderTextColor="#777" maxLength={11} />
-              <Text style={styles.label}>Email Address *</Text>
-              <TextInput value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" style={styles.input} placeholder="example@gmail.com" placeholderTextColor="#777" autoCapitalize="none" />
-              <TouchableOpacity onPress={sendOtp} style={styles.primaryButton}><Text style={styles.primaryText}>CREATE ACCOUNT & SEND OTP</Text></TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={[styles.muted,{textAlign:'center',marginBottom:10}]}>Code sent to {loginPhone || loginEmail}</Text>
-              <Text style={styles.label}>Enter OTP Code</Text>
-              <TextInput value={enteredOtp} onChangeText={setEnteredOtp} keyboardType="number-pad" style={[styles.input,{fontSize:22, letterSpacing:10, textAlign:'center', fontWeight:'900'}]} placeholder="1234" placeholderTextColor="#777" maxLength={4} />
-              <TouchableOpacity onPress={verifyOtpAndLogin} style={styles.primaryButton}><Text style={styles.primaryText}>VERIFY & CONTINUE</Text></TouchableOpacity>
-              <TouchableOpacity onPress={()=>setOtpSent(false)} style={{marginTop:12}}><Text style={{color:GOLD, textAlign:'center', fontWeight:'700'}}>Change Details</Text></TouchableOpacity>
-            </>
-          )}
+          {!otpSent? (<><Text style={styles.label}>Full Name *</Text><TextInput value={fullName} onChangeText={setFullName} style={styles.input} placeholder="John Doe" placeholderTextColor="#777" /><Text style={styles.label}>Phone *</Text><TextInput value={loginPhone} onChangeText={setLoginPhone} keyboardType="phone-pad" style={styles.input} placeholder="08012345678" placeholderTextColor="#777" maxLength={11} /><Text style={styles.label}>Email *</Text><TextInput value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" style={styles.input} placeholder="example@gmail.com" placeholderTextColor="#777" autoCapitalize="none" /><TouchableOpacity onPress={sendOtp} style={styles.primaryButton}><Text style={styles.primaryText}>CREATE ACCOUNT & SEND OTP</Text></TouchableOpacity></>) : (<><Text style={[styles.muted,{textAlign:'center',marginBottom:10}]}>Code sent to {loginPhone || loginEmail}</Text><Text style={styles.label}>Enter OTP</Text><TextInput value={enteredOtp} onChangeText={setEnteredOtp} keyboardType="number-pad" style={[styles.input,{fontSize:22, letterSpacing:10, textAlign:'center', fontWeight:'900'}]} placeholder="1234" placeholderTextColor="#777" maxLength={4} /><TouchableOpacity onPress={verifyOtpAndLogin} style={styles.primaryButton}><Text style={styles.primaryText}>VERIFY & CONTINUE</Text></TouchableOpacity><TouchableOpacity onPress={()=>setOtpSent(false)} style={{marginTop:12}}><Text style={{color:GOLD, textAlign:'center', fontWeight:'700'}}>Change Details</Text></TouchableOpacity></>)}
         </View>
-      </View>
-    );
-  }
+      </View>); }
 
   const Pill = ({ text, value, color = GREEN }) => (<View style={styles.pill}><Text style={styles.muted}>{text}</Text><Text style={[styles.pillValue,{color}]}>{value}</Text></View>);
   const Action = ({ title, subtitle, onPress, color = GREEN, disabled = false }) => (<TouchableOpacity disabled={disabled} onPress={onPress} style={[styles.action,{borderColor:color,opacity:disabled?0.5:1}]}><Text style={[styles.actionTitle,{color}]}>{title}</Text>{subtitle? <Text style={styles.muted}>{subtitle}</Text> : null}</TouchableOpacity>);
-
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={BG} />
+    <View style={styles.root}><StatusBar barStyle="light-content" backgroundColor={BG} />
       <View style={styles.header}><View><Text style={styles.brand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text><Text style={styles.muted}>{userPhone} - 20 coins = NGN 1</Text></View><TouchableOpacity onPress={async()=>{await AsyncStorage.removeItem(STORE.isLoggedIn); setIsLoggedIn(false);}} style={styles.avatar}><Text style={{color:GOLD,fontWeight:'900'}}>LOGOUT</Text></TouchableOpacity></View>
       <View style={styles.pills}><Pill text="WALLET" value={`${coins.toLocaleString()}`} /><Pill text="MIN" value={`NGN 5K`} color={GOLD} /><Pill text="RATE" value={`${COINS_PER_NAIRA}/1`} color={GOLD} /></View>
       <ScrollView contentContainerStyle={{paddingBottom:120}} showsVerticalScrollIndicator={false}>
-        {screen === 'home'? (
-          <>
+        {screen === 'home'? (<>
             <View style={styles.scoreCard}><Text style={styles.muted}>TOTAL SCORE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)} - Need {MIN_WITHDRAWAL.toLocaleString()} for 5K</Text></View>
             <View style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: '#1E1E2E', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#343449' }}>
-              <Text style={{ color: 'white', textAlign: 'center', marginBottom: 6, fontWeight: 'bold', fontSize: 12 }}>{tapCount}/50 taps</Text>
-              <View style={{ height: 10, backgroundColor: '#333', borderRadius: 10, overflow: 'hidden' }}>
-                <View style={{ height: '100%', width: `${(tapCount / 50) * 100}%`, backgroundColor: '#00FF88', borderRadius: 10 }} />
-              </View>
+              <Text style={{ color: 'white', textAlign: 'center', marginBottom: 6, fontWeight: 'bold', fontSize: 12 }}>{tapCount}/50 taps to BONUS AD</Text>
+              <View style={{ height: 12, backgroundColor: '#333', borderRadius: 10, overflow: 'hidden' }}><View style={{ height: '100%', width: `${(tapCount / 50) * 100}%`, backgroundColor: '#00FF88', borderRadius: 10 }} /></View>
             </View>
-            <TouchableOpacity activeOpacity={0.7} onPress={handleTap}>
-              <Animated.View style={[styles.tapCircle,{transform:[{scale:pulse}]}]}>
-                <Text style={styles.tapSmall}>VYRA</Text><Text style={styles.tapTitle}>TAP TO</Text><Text style={styles.tapTitle}>EARN</Text><Text style={styles.tapSmall}>+1 COIN</Text>
-              </Animated.View>
-            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.7} onPress={handleTap}><Animated.View style={[styles.tapCircle,{transform:[{scale:pulse}]}]}><Text style={styles.tapSmall}>VYRA</Text><Text style={styles.tapTitle}>TAP TO</Text><Text style={styles.tapTitle}>EARN</Text><Text style={styles.tapSmall}>+1 COIN</Text></Animated.View></TouchableOpacity>
             <Text style={[styles.muted,{textAlign:'center',marginTop:10}]}>Tap 50 times for bonus + Ad</Text>
             <View style={styles.threeCards}><Action title="DAILY BONUS" onPress={checkin} /><Action title="WALLET" subtitle={money(coins)} onPress={() => setScreen('wallet')}/><Action title="SHOP" subtitle={`${GIFT_CARDS.length} gifts`} onPress={() => setScreen('shop')} color={GOLD}/></View>
             <TouchableOpacity onPress={watchAd} disabled={!rewardLoaded || adBusy} style={[styles.watch,{backgroundColor:rewardLoaded &&!adBusy? GREEN : '#555566'}]}><Text style={styles.watchTitle}>{adBusy? 'LOADING...' : rewardLoaded? 'WATCH AD +100 COINS' : 'LOADING AD...'}</Text></TouchableOpacity>
             <View style={styles.row}><Action title="DAILY CHECK-IN" onPress={checkin} disabled={lastCheckin === todayKey()}/><Action title="SCRATCH" subtitle={`${scratchCount}/3`} onPress={scratch} color={GOLD}/></View>
             <TouchableOpacity onPress={spin} style={styles.spin}><Text style={styles.actionTitle}>SPIN & WIN</Text></TouchableOpacity>
             <TouchableOpacity onPress={invite} style={styles.invite}><Text style={styles.inviteTitle}>INVITE +200</Text><Text style={styles.inviteSub}>Code: {referral}</Text></TouchableOpacity>
-          </>
-        ) : screen === 'wallet'? (
-          <>
-            <Text style={styles.pageTitle}>My Wallet - Min 5,000</Text>
-            <View style={styles.walletCard}><Text style={styles.muted}>BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)}</Text></View>
-            <Text style={styles.sectionTitle}>WITHDRAW</Text>
-            <View style={styles.methodRow}>{['Airtime - MTN','Airtime - Airtel','OPay','PalmPay','Bank Transfer'].map(m=><TouchableOpacity key={m} onPress={()=>setMethod(m)} style={[styles.method,{borderColor:method===m?GREEN:BORDER,backgroundColor:method===m?'#12362B':CARD}]}><Text style={{color:TEXT,fontSize:12}}>{m}</Text></TouchableOpacity>)}</View>
-            <Text style={styles.label}>Amount</Text><TextInput value={amount} onChangeText={setAmount} keyboardType="number-pad" style={styles.input} />
-            <Text style={styles.label}>Details</Text><TextInput value={account} onChangeText={setAccount} style={styles.input} placeholder="Phone or Account" placeholderTextColor="#777" />
-            <Text style={[styles.muted,{marginHorizontal:16,marginTop:8}]}>Ads: {adsWatched}/5 - Balance: {coins}/{MIN_WITHDRAWAL}</Text>
-            <TouchableOpacity onPress={submitWithdrawal} style={[styles.primaryButton,{opacity:adsWatched<5||coins<MIN_WITHDRAWAL?0.45:1}]}><Text style={styles.primaryText}>REQUEST WITHDRAWAL</Text></TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <Text style={styles.pageTitle}>Gift Shop - 9 Items</Text>
-            <View style={styles.walletCard}><Text style={styles.muted}>YOUR BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)}</Text></View>
-            {GIFT_CARDS.map(item=>{
-              const canAfford = coins >= item.cost;
-              return (
-                <View key={item.id} style={styles.shopItemNew}>
-                  <View style={styles.shopIcon}><Text style={{fontSize:22}}>{item.icon}</Text></View>
-                  <View style={{flex:1,marginLeft:12}}>
-                    <Text style={styles.leaderName}>{item.name}</Text>
-                    <Text style={styles.muted}>{item.cost.toLocaleString()} coins - {money(item.cost)}</Text>
-                  </View>
-                  <TouchableOpacity onPress={()=>{
-                    if (!canAfford) return Alert.alert('Need More Coins', `You need ${item.cost.toLocaleString()}, you have ${coins.toLocaleString()}`);
-                    if (adsWatched<5) return Alert.alert('Verification', 'Watch 5 ads first');
-                    Alert.alert('Redeem?', `${item.name} for ${item.cost}?`, [{text:'Cancel'},{text:'Redeem', onPress: async()=>{
-                      saveCoins(coins-item.cost);
-                                            const w = {id:String(Date.now()), amount:item.cost, method:item.type, details:item.name, date:new Date().toLocaleDateString(), status:'Pending'};
-                      const next=[w,...withdrawals]; setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next));
-                      Alert.alert('Success', 'Gift redeemed!');
-                    }}]);
-                  }} style={[styles.redeemButton,{backgroundColor:canAfford?GREEN:'#444'}]}><Text style={styles.redeemText}>{canAfford?'REDEEM':'LOCKED'}</Text></TouchableOpacity>
-                </View>
-              );
-            })}
-          </>
-        )}
+          </>) : screen === 'wallet'? (<>
+            <Text style={styles.pageTitle}>My Wallet - Min 5,000</Text><View style={styles.walletCard}><Text style={styles.muted}>BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)}</Text></View>
+            <Text style={styles.sectionTitle}>WITHDRAW</Text><View style={styles.methodRow}>{['Airtime - MTN','Airtime - Airtel','OPay','PalmPay','Bank Transfer'].map(m=><TouchableOpacity key={m} onPress={()=>setMethod(m)} style={[styles.method,{borderColor:method===m?GREEN:BORDER,backgroundColor:method===m?'#12362B':CARD}]}><Text style={{color:TEXT,fontSize:12}}>{m}</Text></TouchableOpacity>)}</View>
+            <Text style={styles.label}>Amount</Text><TextInput value={amount} onChangeText={setAmount} keyboardType="number-pad" style={styles.input} /><Text style={styles.label}>Details</Text><TextInput value={account} onChangeText={setAccount} style={styles.input} placeholder="Phone or Account" placeholderTextColor="#777" /><Text style={[styles.muted,{marginHorizontal:16,marginTop:8}]}>Ads: {adsWatched}/5 - Balance: {coins}/{MIN_WITHDRAWAL}</Text><TouchableOpacity onPress={submitWithdrawal} style={[styles.primaryButton,{opacity:adsWatched<5||coins<MIN_WITHDRAWAL?0.45:1}]}><Text style={styles.primaryText}>REQUEST WITHDRAWAL</Text></TouchableOpacity><Text style={styles.sectionTitle}>History</Text>{withdrawals.map(w=><View key={w.id} style={styles.history}><View style={{flex:1}}><Text style={{color:TEXT,fontWeight:'700'}}>{w.method} - {w.amount}</Text><Text style={styles.muted}>{w.date} - {w.status}</Text></View></View>)}
+          </>) : (<>
+            <Text style={styles.pageTitle}>Gift Shop - 9 Items</Text><View style={styles.walletCard}><Text style={styles.muted}>YOUR BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)}</Text></View>
+            {GIFT_CARDS.map(item=>{ const canAfford = coins >= item.cost; return (<View key={item.id} style={styles.shopItemNew}><View style={styles.shopIcon}><Text style={{fontSize:22}}>{item.icon}</Text></View><View style={{flex:1,marginLeft:12}}><Text style={styles.leaderName}>{item.name}</Text><Text style={styles.muted}>{item.cost.toLocaleString()} coins - {money(item.cost)}</Text></View><TouchableOpacity onPress={()=>{ if (!canAfford) return Alert.alert('Need More Coins', `You need ${item.cost.toLocaleString()}`); if (adsWatched<5) return Alert.alert('Verification', 'Watch 5 ads first'); Alert.alert('Redeem?', `${item.name} for ${item.cost}?`, [{text:'Cancel'},{text:'Redeem', onPress: async()=>{ saveCoins(coins-item.cost); const w = {id:String(Date.now()), amount:item.cost, method:item.type, details:item.name, date:new Date().toLocaleDateString(), status:'Pending'}; const next=[w,...withdrawals]; setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next)); Alert.alert('Success', 'Gift redeemed!'); }}]); }} style={[styles.redeemButton,{backgroundColor:canAfford?GREEN:'#444'}]}><Text style={styles.redeemText}>{canAfford?'REDEEM':'LOCKED'}</Text></TouchableOpacity></View>); })}
+          </>)}
       </ScrollView>
       <View style={styles.bottomNav}><TouchableOpacity onPress={()=>setScreen('home')} style={styles.navItem}><Text style={[styles.navText,screen==='home'&&{color:GREEN}]}>Home</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('wallet')} style={styles.navItem}><Text style={[styles.navText,screen==='wallet'&&{color:GREEN}]}>Wallet</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('shop')} style={styles.navItem}><Text style={[styles.navText,screen==='shop'&&{color:GREEN}]}>Shop</Text></TouchableOpacity></View>
       <View style={styles.banner}><BannerAd unitId={IDS.banner} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} /></View>
+      <Modal visible={showBonusModal} transparent animationType="fade"><View style={styles.modalOverlay}><View style={styles.modalCard}><Text style={{fontSize:50}}>🎉</Text><Text style={styles.modalTitle}>50 TAPS COMPLETED!</Text><Text style={styles.modalSub}>Watch a short Ad to claim your bonus!</Text><Text style={{color:GREEN,fontSize:28,fontWeight:'900',marginTop:10}}>+100 COINS</Text><TouchableOpacity onPress={handleWatchBonusAd} style={styles.modalPrimary}><Text style={styles.modalPrimaryText}>WATCH AD & CLAIM +100</Text></TouchableOpacity><TouchableOpacity onPress={handleSkipBonus} style={styles.modalSecondary}><Text style={styles.modalSecondaryText}>Skip (+5 only)</Text></TouchableOpacity><Text style={[styles.muted,{marginTop:10,fontSize:11}]}>{rewardLoaded?'Ad Ready ✅':'Ad Loading... ⏳'}</Text></View></View></Modal>
     </View>
   );
-}
+            }
 const BG='#0A0A14', CARD='#1E1E2E', GREEN='#00FF88', GOLD='#FFD700', TEXT='#F5F5FA', MUTED='#9B9BAF', BORDER='#343449';
 const styles=StyleSheet.create({
   splashRoot:{flex:1,backgroundColor:BG,alignItems:'center',justifyContent:'center'},
@@ -350,5 +259,13 @@ const styles=StyleSheet.create({
   shopIcon:{width:48,height:48,borderRadius:12,backgroundColor:'#2A2A40',alignItems:'center',justifyContent:'center'},
   redeemButton:{paddingHorizontal:14,paddingVertical:8,borderRadius:8},
   redeemText:{fontWeight:'900',fontSize:11,color:BG},
-  navItem:{flex:1, alignItems:'center'}
+  navItem:{flex:1, alignItems:'center'},
+  modalOverlay:{flex:1,backgroundColor:'rgba(0,0,0,0.85)',alignItems:'center',justifyContent:'center',padding:20},
+  modalCard:{backgroundColor:'#1E1E2E',borderRadius:24,padding:24,width:'90%',alignItems:'center',borderWidth:2,borderColor:GOLD},
+  modalTitle:{color:TEXT,fontSize:18,fontWeight:'900',marginTop:10},
+  modalSub:{color:MUTED,fontSize:13,marginTop:8,textAlign:'center'},
+  modalPrimary:{marginTop:18,backgroundColor:GREEN,borderRadius:14,padding:16,width:'100%',alignItems:'center'},
+  modalPrimaryText:{color:BG,fontWeight:'900',fontSize:14},
+  modalSecondary:{marginTop:12,padding:10},
+  modalSecondaryText:{color:MUTED,fontSize:12}
 });
