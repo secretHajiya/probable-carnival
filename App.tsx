@@ -269,4 +269,6 @@ const styles = StyleSheet.create({
   tabActive:{backgroundColor:'#112240'},
   tabText:{color:MUTED, fontWeight:'700', fontSize:12},
   modalOverlay:{flex:1, backgroundColor:'rgba(0,0,0,0.7)', justifyContent:'center', alignItems:'center'},
-  modalBox:{backgroundColor:CARD, borderRad
+  modalBox:{backgroundColor:CARD, borderRadius:20, padding:20, width:'85%', borderWidth:1, borderColor:GOLD, alignItems:'center'},
+  modalTitle:{color:GOLD, fontSize:18, fontWeight:'900', marginBottom:8},
+});
