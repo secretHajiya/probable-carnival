@@ -5,17 +5,16 @@
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android"
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
-    "@react-native-community/netinfo": "11.3.1",
     "expo": "~52.0.0",
     "expo-constants": "~17.0.0",
+    "expo-linking": "~7.0.3",
     "react": "18.3.1",
-    "react-native": "0.76.5",
-    "react-native-google-mobile-ads": "14.11.0",
-    "expo-build-properties": "~0.13.1"
+    "react-native": "0.76.5"
   },
   "devDependencies": {
     "babel-preset-expo": "~12.0.0",
