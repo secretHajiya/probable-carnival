@@ -1,27 +1,22 @@
 {
   "expo": {
-    "name": "Vyra Rewards",
+    "name": "Vyra Rewards Pro - Earn Money",
     "slug": "vyra-rewards-pro",
     "version": "1.0.1",
+    "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "android": { 
+    "scheme": "vyrarewards",
+    "userInterfaceStyle": "dark",
+    "platforms": ["android"],
+    "android": {
       "package": "com.vyrarewards.earn",
+      "versionCode": 2,
       "icon": "./assets/icon.png",
-      "versionCode": 2
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      }
     },
-    "plugins": [
-      [
-        "expo-build-properties", 
-        { 
-          "android": { 
-            "kotlinVersion": "1.9.25",
-            "compileSdkVersion": 35,
-            "targetSdkVersion": 35,
-            "minSdkVersion": 24
-          } 
-        }
-      ],
-      ["react-native-google-mobile-ads", { "androidAppId": "ca-app-pub-9958539812897899~1555539022" }]
-    ]
+    "assetBundlePatterns": ["**/*"]
   }
 }
