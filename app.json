@@ -5,6 +5,7 @@
     "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
     "android": {
       "package": "com.vyra.rewards",
       "versionCode": 2,
