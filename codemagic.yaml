@@ -15,7 +15,7 @@ scripts:
 
   - name: Build Android APK
     script: |
-      CI=1 npx expo prebuild --platform android
+      npx expo prebuild --platform android --non-interactive
       cd android
       chmod +x gradlew
       ./gradlew assembleRelease --no-daemon
