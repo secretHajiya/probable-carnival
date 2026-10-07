@@ -2,8 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Linking,
-  Platform,
-  Pressable,
   ScrollView,
   Share,
   StatusBar,
@@ -15,207 +13,113 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/*
- * ============================================================
- * VYRA REWARDS
- * ============================================================
- * Simple rewards / points application.
- *
- * Storage:
- *   vyra_points
- *   vyra_taps
- *   vyra_completed
- *   vyra_email
- *   vyra_withdraw_method
- *   vyra_first_launch
- *
- * IMPORTANT:
- * This app stores points locally on the device.
- * The withdraw screen currently creates a request message only.
- * A real payment backend/API is required for actual withdrawals.
- * ============================================================
- */
+const APP_VERSION = '1.0.1';
 
-const APP_NAME = 'Vyra Rewards';
-const APP_VERSION = '1.0.0';
+const MONETAG_DIRECT_LINK =
+  'https://uplcm.com/4/11966517';
 
-const MONETAG_DIRECT_LINK = 'https://uplcm.com/4/11966517';
+const MIN_WITHDRAW = 5000;
 
-const BG = '#0A0A0A';
-const CARD = '#1A1A1A';
-const CARD_2 = '#202020';
-const BORDER = '#2A2A2A';
-
-const GOLD = '#FFD700';
-const GREEN = '#00FF88';
-const RED = '#FF4D4D';
-const BLUE = '#4DA6FF';
-const PURPLE = '#9B59FF';
-
-const TEXT = '#FFFFFF';
-const MUTED = '#888888';
-const DARK_TEXT = '#0A0A0A';
-
-const POINTS_PER_TAP = 2;
-const WATCH_AD_POINTS = 50;
-const MIN_WITHDRAW_POINTS = 5000;
-
-const STORAGE_POINTS = 'vyra_points';
-const STORAGE_TAPS = 'vyra_taps';
-const STORAGE_COMPLETED = 'vyra_completed';
-const STORAGE_EMAIL = 'vyra_email';
-const STORAGE_METHOD = 'vyra_withdraw_method';
-const STORAGE_FIRST_LAUNCH = 'vyra_first_launch';
-
-/*
- * ============================================================
- * TASK LIST
- * ============================================================
- */
-
-type Task = {
-  id: number;
-  name: string;
-  bonus: number;
-  link: string;
-  code?: string;
-  color: string;
-  description?: string;
-};
-
-const TASKS_10: Task[] = [
+const TASKS = [
   {
-    id: 1,
-    name: 'GTBank - GTWorld',
-    bonus: 80,
-    link: 'https://l.ead.me/gtworld',
-    color: '#E3530F',
-    description: 'Open the GTWorld offer.',
+    id: 'gtworld',
+    title: 'GTBank - GTWorld',
+    reward: 80,
+    code: '',
   },
   {
-    id: 2,
-    name: 'PalmPay - 5,550 Bonus',
-    bonus: 100,
-    link: 'https://info.palmpay.com/j4ObFGCq',
+    id: 'palmpay',
+    title: 'PalmPay - 5,550 Bonus',
+    reward: 100,
     code: 'NSFM3287',
-    color: '#6C2EB5',
-    description: 'Use the referral code when required.',
   },
   {
-    id: 3,
-    name: 'FairMoney',
-    bonus: 90,
-    link: 'https://fairmoney.io/referral?referral_code=UAPM5BZ',
+    id: 'fairmoney',
+    title: 'FairMoney',
+    reward: 90,
     code: 'UAPM5BZ',
-    color: '#1A1A1A',
-    description: 'Open the FairMoney referral offer.',
   },
   {
-    id: 4,
-    name: 'Binance',
-    bonus: 120,
-    link: 'https://account.binance.com/register?ref=1205609224',
+    id: 'binance',
+    title: 'Binance',
+    reward: 120,
     code: '1205609224',
-    color: '#F3BA2F',
-    description: 'Open the Binance referral page.',
   },
   {
-    id: 5,
-    name: 'PiggyVest - 1,000 Bonus',
-    bonus: 80,
-    link: 'https://join.piggyvest.com/secrethajiya004',
+    id: 'piggyvest',
+    title: 'PiggyVest - 1,000 Bonus',
+    reward: 80,
     code: 'secrethajiya004',
-    color: '#0D60D8',
-    description: 'Open the PiggyVest offer.',
   },
   {
-    id: 6,
-    name: 'Moniepoint',
-    bonus: 100,
-    link: 'https://join.moniepoint.com?adj_t=15ha060e&rC=TLEG561',
+    id: 'moniepoint',
+    title: 'Moniepoint',
+    reward: 100,
     code: 'TLEG561',
-    color: '#0047AB',
-    description: 'Open the Moniepoint referral offer.',
   },
   {
-    id: 7,
-    name: 'Flutterwave Send',
-    bonus: 70,
-    link: 'https://send.flutterwave.com/ref/?code=OAIH4CJTJI94',
+    id: 'flutterwave',
+    title: 'Flutterwave Send',
+    reward: 70,
     code: 'OAIH4CJTJI94',
-    color: '#FB9129',
-    description: 'Open Flutterwave Send referral.',
   },
   {
-    id: 8,
-    name: 'OPay',
-    bonus: 80,
-    link: 'https://opay.com',
-    color: '#00A651',
-    description: 'Open the OPay website.',
+    id: 'opay',
+    title: 'OPay',
+    reward: 80,
+    code: '',
   },
   {
-    id: 9,
-    name: 'Kuda Bank',
-    bonus: 80,
-    link: 'https://kuda.com',
-    color: '#40196D',
-    description: 'Open the Kuda website.',
+    id: 'kuda',
+    title: 'Kuda Bank',
+    reward: 80,
+    code: '',
   },
   {
-    id: 10,
-    name: 'Carbon',
-    bonus: 70,
-    link: 'https://getcarbon.co',
-    color: '#5A2D82',
-    description: 'Open the Carbon website.',
+    id: 'carbon',
+    title: 'Carbon',
+    reward: 70,
+    code: '',
   },
 ];
 
-/*
- * ============================================================
- * SMALL HELPER COMPONENTS
- * ============================================================
- */
-
-type StatCardProps = {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  accent?: string;
+const STORAGE = {
+  points: 'vyra_points',
+  taps: 'vyra_taps',
+  completed: 'vyra_completed',
+  email: 'vyra_email',
+  withdrawMethod: 'vyra_withdraw_method',
+  firstLaunch: 'vyra_first_launch',
 };
 
 function StatCard({
   title,
   value,
-  subtitle,
-  accent = GOLD,
-}: StatCardProps) {
+  icon,
+}: {
+  title: string;
+  value: string;
+  icon: string;
+}) {
   return (
     <View style={styles.statCard}>
+      <Text style={styles.statIcon}>{icon}</Text>
+      <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statTitle}>{title}</Text>
-
-      <Text style={[styles.statValue, { color: accent }]}>
-        {value}
-      </Text>
-
-      {subtitle ? (
-        <Text style={styles.statSubtitle}>{subtitle}</Text>
-      ) : null}
     </View>
   );
 }
 
-type SectionHeaderProps = {
+function SectionHeader({
+  title,
+  subtitle,
+}: {
   title: string;
   subtitle?: string;
-};
-
-function SectionHeader({ title, subtitle }: SectionHeaderProps) {
+}) {
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
-
       {subtitle ? (
         <Text style={styles.sectionSubtitle}>{subtitle}</Text>
       ) : null}
@@ -223,421 +127,193 @@ function SectionHeader({ title, subtitle }: SectionHeaderProps) {
   );
 }
 
-/*
- * ============================================================
- * MAIN APP
- * ============================================================
- */
-
 export default function App() {
-  const [points, setPoints] = useState<number>(0);
-  const [taps, setTaps] = useState<number>(0);
-  const [tab, setTab] = useState<'home' | 'wallet'>('home');
+  const [loading, setLoading] = useState(true);
+  const [screen, setScreen] = useState<'home' | 'wallet'>('home');
 
-  const [email, setEmail] = useState<string>('');
-  const [withdrawMethod, setWithdrawMethod] =
-    useState<string>('OPay');
-
-  const [completed, setCompleted] = useState<number[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const [lastEarned, setLastEarned] = useState<number>(0);
-  const [showTaskInfo, setShowTaskInfo] = useState<number | null>(null);
-
-  /*
-   * ----------------------------------------------------------
-   * LOAD SAVED DATA
-   * ----------------------------------------------------------
-   */
+  const [points, setPoints] = useState(0);
+  const [taps, setTaps] = useState(0);
+  const [completed, setCompleted] = useState<string[]>([]);
+  const [email, setEmail] = useState('');
+  const [withdrawMethod, setWithdrawMethod] = useState('OPay');
 
   useEffect(() => {
-    let mounted = true;
-
-    const loadData = async () => {
-      try {
-        const [
-          savedPoints,
-          savedTaps,
-          savedCompleted,
-          savedEmail,
-          savedMethod,
-        ] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_POINTS),
-          AsyncStorage.getItem(STORAGE_TAPS),
-          AsyncStorage.getItem(STORAGE_COMPLETED),
-          AsyncStorage.getItem(STORAGE_EMAIL),
-          AsyncStorage.getItem(STORAGE_METHOD),
-        ]);
-
-        if (!mounted) {
-          return;
-        }
-
-        if (savedPoints !== null) {
-          const parsedPoints = parseInt(savedPoints, 10);
-
-          if (!Number.isNaN(parsedPoints)) {
-            setPoints(parsedPoints);
-          }
-        }
-
-        if (savedTaps !== null) {
-          const parsedTaps = parseInt(savedTaps, 10);
-
-          if (!Number.isNaN(parsedTaps)) {
-            setTaps(parsedTaps);
-          }
-        }
-
-        if (savedCompleted !== null) {
-          try {
-            const parsedCompleted = JSON.parse(savedCompleted);
-
-            if (Array.isArray(parsedCompleted)) {
-              setCompleted(parsedCompleted);
-            }
-          } catch {
-            setCompleted([]);
-          }
-        }
-
-        if (savedEmail !== null) {
-          setEmail(savedEmail);
-        }
-
-        if (savedMethod !== null) {
-          setWithdrawMethod(savedMethod);
-        }
-      } catch (error) {
-        console.log('Vyra load error:', error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     loadData();
-
-    return () => {
-      mounted = false;
-    };
   }, []);
 
-  /*
-   * ----------------------------------------------------------
-   * SAVE POINTS
-   * ----------------------------------------------------------
-   */
+  async function loadData() {
+    try {
+      const savedPoints = await AsyncStorage.getItem(STORAGE.points);
+      const savedTaps = await AsyncStorage.getItem(STORAGE.taps);
+      const savedCompleted = await AsyncStorage.getItem(
+        STORAGE.completed
+      );
+      const savedEmail = await AsyncStorage.getItem(STORAGE.email);
+      const savedMethod = await AsyncStorage.getItem(
+        STORAGE.withdrawMethod
+      );
 
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    AsyncStorage.setItem(
-      STORAGE_POINTS,
-      String(points),
-    ).catch(error => {
-      console.log('Points save error:', error);
-    });
-  }, [points, loading]);
-
-  /*
-   * ----------------------------------------------------------
-   * SAVE TAPS
-   * ----------------------------------------------------------
-   */
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    AsyncStorage.setItem(
-      STORAGE_TAPS,
-      String(taps),
-    ).catch(error => {
-      console.log('Taps save error:', error);
-    });
-  }, [taps, loading]);
-
-  /*
-   * ----------------------------------------------------------
-   * SAVE COMPLETED TASKS
-   * ----------------------------------------------------------
-   */
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    AsyncStorage.setItem(
-      STORAGE_COMPLETED,
-      JSON.stringify(completed),
-    ).catch(error => {
-      console.log('Completed save error:', error);
-    });
-  }, [completed, loading]);
-
-  /*
-   * ----------------------------------------------------------
-   * SAVE ACCOUNT DETAILS
-   * ----------------------------------------------------------
-   */
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    AsyncStorage.setItem(
-      STORAGE_EMAIL,
-      email,
-    ).catch(error => {
-      console.log('Email save error:', error);
-    });
-  }, [email, loading]);
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    AsyncStorage.setItem(
-      STORAGE_METHOD,
-      withdrawMethod,
-    ).catch(error => {
-      console.log('Method save error:', error);
-    });
-  }, [withdrawMethod, loading]);
-
-  /*
-   * ----------------------------------------------------------
-   * FIRST LAUNCH
-   * ----------------------------------------------------------
-   */
-
-  useEffect(() => {
-    const checkFirstLaunch = async () => {
-      try {
-        const firstLaunch = await AsyncStorage.getItem(
-          STORAGE_FIRST_LAUNCH,
-        );
-
-        if (!firstLaunch) {
-          await AsyncStorage.setItem(
-            STORAGE_FIRST_LAUNCH,
-            'true',
-          );
-        }
-      } catch (error) {
-        console.log('First launch error:', error);
-      }
-    };
-
-    checkFirstLaunch();
-  }, []);
-
-  /*
-   * ----------------------------------------------------------
-   * POINT CALCULATIONS
-   * ----------------------------------------------------------
-   */
-
-  const completedCount = completed.length;
-
-  const taskPoints = useMemo(() => {
-    return TASKS_10.reduce((total, task) => {
-      if (completed.includes(task.id)) {
-        return total + task.bonus;
+      if (savedPoints) {
+        setPoints(Number(savedPoints));
       }
 
-      return total;
-    }, 0);
-  }, [completed]);
+      if (savedTaps) {
+        setTaps(Number(savedTaps));
+      }
 
-  const progressPercent = useMemo(() => {
-    if (TASKS_10.length === 0) {
-      return 0;
+      if (savedCompleted) {
+        setCompleted(JSON.parse(savedCompleted));
+      }
+
+      if (savedEmail) {
+        setEmail(savedEmail);
+      }
+
+      if (savedMethod) {
+        setWithdrawMethod(savedMethod);
+      }
+
+      await AsyncStorage.setItem(STORAGE.firstLaunch, '1');
+    } catch (error) {
+      console.log('Load error:', error);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return Math.round(
-      (completedCount / TASKS_10.length) * 100,
+  async function savePoints(value: number) {
+    setPoints(value);
+    await AsyncStorage.setItem(
+      STORAGE.points,
+      String(value)
     );
-  }, [completedCount]);
+  }
 
-  /*
-   * ----------------------------------------------------------
-   * ADD POINTS
-   * ----------------------------------------------------------
-   */
+  async function saveTaps(value: number) {
+    setTaps(value);
+    await AsyncStorage.setItem(
+      STORAGE.taps,
+      String(value)
+    );
+  }
 
-  const addPoints = (amount: number) => {
-    if (amount <= 0) {
-      return;
+  async function handleTap() {
+    const newTaps = taps + 1;
+    const newPoints = points + 2;
+
+    await saveTaps(newTaps);
+    await savePoints(newPoints);
+
+    if (newTaps % 10 === 0) {
+      try {
+        await Linking.openURL(MONETAG_DIRECT_LINK);
+      } catch (error) {
+        console.log('Direct link error:', error);
+      }
     }
+  }
 
-    setPoints(previous => previous + amount);
-    setLastEarned(amount);
-  };
-
-  /*
-   * ----------------------------------------------------------
-   * TAP TO EARN
-   * ----------------------------------------------------------
-   */
-
-  const handleTap = () => {
-    const newTapCount = taps + 1;
-
-    setTaps(newTapCount);
-    addPoints(POINTS_PER_TAP);
-
-    /*
-     * Open the Monetag direct link after every 10 taps.
-     */
-    if (newTapCount % 10 === 0) {
-      Linking.openURL(MONETAG_DIRECT_LINK).catch(() => {
-        Alert.alert(
-          'Ad Link',
-          'Ba a iya bude ad link a wannan lokacin ba.',
-        );
-      });
-    }
-  };
-
-  /*
-   * ----------------------------------------------------------
-   * WATCH AD
-   * ----------------------------------------------------------
-   */
-
-  const handleWatchAd = async () => {
+  async function handleWatchAd() {
     try {
       await Linking.openURL(MONETAG_DIRECT_LINK);
-      addPoints(WATCH_AD_POINTS);
+
+      const newPoints = points + 50;
+      await savePoints(newPoints);
 
       Alert.alert(
-        'Bonus!',
-        `Ka samu +${WATCH_AD_POINTS} points.`,
+        'Reward Added',
+        '50 Coins have been added to your balance.'
       );
-    } catch {
+    } catch (error) {
       Alert.alert(
-        'Ad Link',
-        'Ba a iya bude ad link ba.',
+        'Unable to Open',
+        'The reward link could not be opened.'
       );
     }
-  };
+  }
 
-  /*
-   * ----------------------------------------------------------
-   * TASK HANDLER
-   * ----------------------------------------------------------
-   */
-
-  const handleTask = async (task: Task) => {
+  async function handleTask(task: (typeof TASKS)[number]) {
     if (completed.includes(task.id)) {
       Alert.alert(
-        'An riga an kammala',
-        `${task.name} yana cikin completed tasks.`,
+        'Already Completed',
+        'You have already completed this task.'
       );
-
       return;
     }
 
-    try {
-      await Linking.openURL(task.link);
+    const newCompleted = [...completed, task.id];
 
-      addPoints(task.bonus);
+    setCompleted(newCompleted);
 
-      setCompleted(previous => {
-        if (previous.includes(task.id)) {
-          return previous;
-        }
+    await AsyncStorage.setItem(
+      STORAGE.completed,
+      JSON.stringify(newCompleted)
+    );
 
-        return [...previous, task.id];
-      });
+    const newPoints = points + task.reward;
+    await savePoints(newPoints);
 
+    if (task.code) {
       Alert.alert(
-        'Bonus!',
-        `Ka samu +${task.bonus} points daga ${task.name}.`,
+        task.title,
+        `Reward: ${task.reward} Coins\n\nReferral/Promo Code: ${task.code}`
       );
-    } catch {
+    } else {
       Alert.alert(
-        'Error',
-        'Ba a iya bude wannan link din ba.',
+        task.title,
+        `${task.reward} Coins have been added.`
       );
     }
-  };
+  }
 
-  /*
-   * ----------------------------------------------------------
-   * SHARE APP
-   * ----------------------------------------------------------
-   */
-
-  const handleShare = async () => {
+  async function handleShare() {
     try {
       await Share.share({
         message:
-          'Ka sauke Vyra Rewards ka samu rewards! Use code VYRA2026',
+          'Join Vyra Rewards and earn Coins by completing simple tasks!',
       });
     } catch (error) {
       console.log('Share error:', error);
     }
-  };
+  }
 
-  /*
-   * ----------------------------------------------------------
-   * WITHDRAW
-   * ----------------------------------------------------------
-   */
-
-  const handleWithdraw = () => {
-    const cleanAccount = email.trim();
-
-    if (points < MIN_WITHDRAW_POINTS) {
+  async function handleWithdraw() {
+    if (points < MIN_WITHDRAW) {
       Alert.alert(
-        'Rashin Points',
-        `Kana bukatar ${MIN_WITHDRAW_POINTS} points kafin withdraw.`,
+        'Not Enough Coins',
+        `You need at least ${MIN_WITHDRAW.toLocaleString()} Coins before requesting a withdrawal.`
       );
-
       return;
     }
 
-    if (!cleanAccount) {
+    if (!email.trim()) {
       Alert.alert(
-        'Shigar da Account',
-        'Da fatan shigar da account number ko email.',
+        'Account Required',
+        'Please enter your account number, phone number or email.'
       );
-
       return;
     }
 
-    Alert.alert(
-      'Withdraw Request',
-      `An karbi bukatarka!\n\nPoints: ${points}\nMethod: ${withdrawMethod}\nAccount: ${cleanAccount}\n\nZa a duba request din kafin biyan kudi.`,
-      [
-        {
-          text: 'OK',
-          style: 'default',
-        },
-      ],
+    await AsyncStorage.setItem(
+      STORAGE.email,
+      email.trim()
     );
-  };
 
-  /*
-   * ----------------------------------------------------------
-   * RESET LOCAL DATA
-   * ----------------------------------------------------------
-   */
+    await AsyncStorage.setItem(
+      STORAGE.withdrawMethod,
+      withdrawMethod
+    );
 
-  const handleReset = () => {
     Alert.alert(
-      'Reset App',
-      'Kana son goge points da tasks da aka ajiye a wannan wayar?',
+      'Withdrawal Request',
+      `Your ${withdrawMethod} withdrawal request has been recorded for testing.\n\nAccount: ${email.trim()}`
+    );
+  }
+
+  async function resetApp() {
+    Alert.alert(
+      'Reset Test App',
+      'This will delete your saved Coins, tasks and account information.',
       [
         {
           text: 'Cancel',
@@ -647,222 +323,857 @@ export default function App() {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
-            try {
-              await AsyncStorage.multiRemove([
-                STORAGE_POINTS,
-                STORAGE_TAPS,
-                STORAGE_COMPLETED,
-                STORAGE_EMAIL,
-                STORAGE_METHOD,
-              ]);
+            await AsyncStorage.multiRemove([
+              STORAGE.points,
+              STORAGE.taps,
+              STORAGE.completed,
+              STORAGE.email,
+              STORAGE.withdrawMethod,
+            ]);
 
-              setPoints(0);
-              setTaps(0);
-              setCompleted([]);
-              setEmail('');
-              setWithdrawMethod('OPay');
-              setLastEarned(0);
+            setPoints(0);
+            setTaps(0);
+            setCompleted([]);
+            setEmail('');
+            setWithdrawMethod('OPay');
 
-              Alert.alert(
-                'Done',
-                'An reset din Vyra Rewards.',
-              );
-            } catch {
-              Alert.alert(
-                'Error',
-                'An samu matsala wajen reset.',
-              );
-            }
+            setScreen('home');
           },
         },
-      ],
+      ]
     );
-  };
+  }
 
-  /*
-   * ----------------------------------------------------------
-   * INFO
-   * ----------------------------------------------------------
-   */
-
-  const handleInfo = () => {
+  function showAbout() {
     Alert.alert(
-      APP_NAME,
-      `Version ${APP_VERSION}\n\nTap to earn points, complete offers and build your balance.\n\n1000 PTS = ₦100\nMinimum withdrawal = 5000 PTS`,
-      [
-        {
-          text: 'Close',
-          style: 'cancel',
-        },
-        {
-          text: 'Reset Data',
-          style: 'destructive',
-          onPress: handleReset,
-        },
-      ],
+      'Vyra Rewards',
+      `Test Rewards App\n\nVersion ${APP_VERSION}\n\nThis is a testing version of Vyra Rewards.`
     );
-  };
+  }
 
-  /*
-   * ----------------------------------------------------------
-   * LOADING SCREEN
-   * ----------------------------------------------------------
-   */
+  const completedCount = completed.length;
+
+  const taskCoins = useMemo(() => {
+    return TASKS.reduce((total, task) => {
+      if (completed.includes(task.id)) {
+        return total + task.reward;
+      }
+
+      return total;
+    }, 0);
+  }, [completed]);
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={BG}
-        />
-
-        <Text style={styles.loadingLogo}>
-          VYRA
-        </Text>
-
-        <Text style={styles.loadingTitle}>
-          REWARDS
-        </Text>
-
+        <StatusBar barStyle="light-content" />
+        <Text style={styles.logoText}>VYRA</Text>
         <Text style={styles.loadingText}>
-          Loading...
+          Rewards
         </Text>
       </View>
     );
   }
 
-  /*
-   * ----------------------------------------------------------
-   * MAIN SCREEN
-   * ----------------------------------------------------------
-   */
-
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={BG}
-      />
+      <StatusBar barStyle="light-content" />
 
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.logo}>
-            VYRA REWARDS
-          </Text>
-
-          <Text style={styles.headerSubtitle}>
-            Earn • Complete • Withdraw
-          </Text>
-        </View>
-
-        <View style={styles.pointsBadge}>
-          <Text style={styles.pointsText}>
-            {points.toLocaleString()} PTS
-          </Text>
-        </View>
-      </View>
-
-      {/* HOME */}
-      {tab === 'home' && (
+      {screen === 'home' ? (
         <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
         >
-          {/* BALANCE HERO */}
-          <View style={styles.balanceHero}>
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.brand}>VYRA</Text>
+              <Text style={styles.brandSubtitle}>
+                Rewards
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.aboutButton}
+              onPress={showAbout}
+            >
+              <Text style={styles.aboutButtonText}>
+                ?
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.balanceCard}>
             <Text style={styles.balanceLabel}>
-              CURRENT BALANCE
+              Your Balance
             </Text>
 
-            <Text style={styles.balanceAmount}>
+            <Text style={styles.balance}>
               {points.toLocaleString()}
             </Text>
 
-            <Text style={styles.balancePoints}>
-              POINTS
-            </Text>
-
-            <View style={styles.balanceDivider} />
-
-            <Text style={styles.balanceNaira}>
-              ≈ ₦{Math.floor(points / 10).toLocaleString()}
-            </Text>
-
-            <Text style={styles.balanceRate}>
-              1000 PTS = ₦100
-            </Text>
-          </View>
-
-          {/* TAP SECTION */}
-          <View style={styles.tapSection}>
-            <Text style={styles.tapHeading}>
-              TAP & EARN
-            </Text>
-
-            <Text style={styles.tapDescription}>
-              Tap the button to earn {POINTS_PER_TAP} points
+            <Text style={styles.coinsLabel}>
+              COINS
             </Text>
 
             <TouchableOpacity
-              style={styles.tapCircle}
+              style={styles.tapButton}
               onPress={handleTap}
-              activeOpacity={0.78}
+              activeOpacity={0.8}
             >
-              <View style={styles.tapCircleInner}>
-                <Text style={styles.tapSmall}>
-                  TAP TO
-                </Text>
+              <Text style={styles.tapButtonTitle}>
+                TAP TO EARN
+              </Text>
 
-                <Text style={styles.tapTitle}>
-                  EARN
-                </Text>
-
-                <Text style={styles.tapSub}>
-                  +{POINTS_PER_TAP} PTS
-                </Text>
-              </View>
+              <Text style={styles.tapButtonSub}>
+                +2 Coins
+              </Text>
             </TouchableOpacity>
-
-            <Text style={styles.tapCounter}>
-              {taps.toLocaleString()} taps
-            </Text>
-
-            {lastEarned > 0 ? (
-              <View style={styles.earnedPill}>
-                <Text style={styles.earnedPillText}>
-                  +{lastEarned} PTS EARNED
-                </Text>
-              </View>
-            ) : null}
           </View>
 
-          {/* STAT CARDS */}
           <View style={styles.statsRow}>
             <StatCard
-              title="BALANCE"
+              icon="🪙"
+              title="Coins"
               value={points.toLocaleString()}
-              subtitle="Points"
-              accent={GOLD}
             />
 
             <StatCard
-              title="TASKS"
-              value={`${completedCount}/10`}
-              subtitle={`${progressPercent}% complete`}
-              accent={GREEN}
-            />
-
-            <StatCard
-              title="TAPS"
+              icon="👆"
+              title="Taps"
               value={taps.toLocaleString()}
-              subtitle="Total taps"
-              accent={BLUE}
+            />
+
+            <StatCard
+              icon="✓"
+              title="Tasks"
+              value={`${completedCount}/${TASKS.length}`}
             />
           </View>
 
-          {/* WATCH AD */}
+          <View style={styles.watchCard}>
+            <View style={styles.watchTextBox}>
+              <Text style={styles.watchTitle}>
+                Watch & Earn
+              </Text>
+
+              <Text style={styles.watchSubtitle}>
+                Open an offer and get 50 Coins
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.watchButton}
+              onPress={handleWatchAd}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.watchButtonText}>
+                +50
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <SectionHeader
+            title="Earn More Coins"
+            subtitle="Complete tasks to increase your balance"
+          />
+
+          {TASKS.map((task) => {
+            const isCompleted = completed.includes(task.id);
+
+            return (
+              <TouchableOpacity
+                key={task.id}
+                style={[
+                  styles.taskCard,
+                  isCompleted && styles.taskCompleted,
+                ]}
+                onPress={() => handleTask(task)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.taskIcon}>
+                  <Text style={styles.taskIconText}>
+                    {isCompleted ? '✓' : '＋'}
+                  </Text>
+                </View>
+
+                <View style={styles.taskInfo}>
+                  <Text style={styles.taskTitle}>
+                    {task.title}
+                  </Text>
+
+                  <Text style={styles.taskReward}>
+                    +{task.reward} Coins
+                  </Text>
+
+                  {task.code ? (
+                    <Text style={styles.taskCode}>
+                      Code: {task.code}
+                    </Text>
+                  ) : null}
+                </View>
+
+                <Text style={styles.taskArrow}>
+                  {isCompleted ? '✓' : '›'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+
           <TouchableOpacity
-            style={styles.watc
+            style={styles.shareButton}
+            onPress={handleShare}
+          >
+            <Text style={styles.shareButtonText}>
+              Share Vyra Rewards
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.resetButton}
+            onPress={resetApp}
+          >
+            <Text style={styles.resetButtonText}>
+              Reset Test Data
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.versionText}>
+            Vyra Rewards v{APP_VERSION}
+          </Text>
+        </ScrollView>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.brand}>VYRA</Text>
+              <Text style={styles.brandSubtitle}>
+                Wallet
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.walletBalanceCard}>
+            <Text style={styles.balanceLabel}>
+              Available Coins
+            </Text>
+
+            <Text style={styles.balance}>
+              {points.toLocaleString()}
+            </Text>
+
+            <Text style={styles.coinsLabel}>
+              COINS
+            </Text>
+          </View>
+
+          <SectionHeader
+            title="Withdraw"
+            subtitle={`Minimum withdrawal: ${MIN_WITHDRAW.toLocaleString()} Coins`}
+          />
+
+          <View style={styles.methodRow}>
+            {['OPay', 'PalmPay', 'Bank'].map((method) => (
+              <TouchableOpacity
+                key={method}
+                style={[
+                  styles.methodButton,
+                  withdrawMethod === method &&
+                    styles.methodButtonActive,
+                ]}
+                onPress={async () => {
+                  setWithdrawMethod(method);
+
+                  await AsyncStorage.setItem(
+                    STORAGE.withdrawMethod,
+                    method
+                  );
+                }}
+              >
+                <Text
+                  style={[
+                    styles.methodText,
+                    withdrawMethod === method &&
+                      styles.methodTextActive,
+                  ]}
+                >
+                  {method}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.inputLabel}>
+            Account / Phone / Email
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Enter account details"
+            placeholderTextColor="#777"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="default"
+            autoCapitalize="none"
+          />
+
+          <TouchableOpacity
+            style={styles.withdrawButton}
+            onPress={handleWithdraw}
+          >
+            <Text style={styles.withdrawButtonText}>
+              REQUEST WITHDRAWAL
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>
+              How It Works
+            </Text>
+
+            <Text style={styles.infoText}>
+              • Tap to earn Coins
+            </Text>
+
+            <Text style={styles.infoText}>
+              • Watch offers to earn more
+            </Text>
+
+            <Text style={styles.infoText}>
+              • Complete available tasks
+            </Text>
+
+            <Text style={styles.infoText}>
+              • Reach the minimum withdrawal
+            </Text>
+
+            <Text style={styles.infoText}>
+              • Submit your withdrawal details
+            </Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>
+              Task Earnings
+            </Text>
+
+            <Text style={styles.taskCoinsValue}>
+              {taskCoins.toLocaleString()} Coins
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={handleShare}
+          >
+            <Text style={styles.shareButtonText}>
+              Share Vyra Rewards
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+
+      <View style={styles.bottomNav}>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setScreen('home')}
+        >
+          <Text
+            style={[
+              styles.navIcon,
+              screen === 'home' && styles.navActive,
+            ]}
+          >
+            🏠
+          </Text>
+
+          <Text
+            style={[
+              styles.navText,
+              screen === 'home' && styles.navActive,
+            ]}
+          >
+            Home
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setScreen('wallet')}
+        >
+          <Text
+            style={[
+              styles.navIcon,
+              screen === 'wallet' && styles.navActive,
+            ]}
+          >
+            💰
+          </Text>
+
+          <Text
+            style={[
+              styles.navText,
+              screen === 'wallet' && styles.navActive,
+            ]}
+          >
+            Wallet
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#09090f',
+  },
+
+  content: {
+    padding: 16,
+    paddingBottom: 110,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#09090f',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  logoText: {
+    color: '#ffffff',
+    fontSize: 42,
+    fontWeight: '900',
+    letterSpacing: 4,
+  },
+
+  loadingText: {
+    color: '#a78bfa',
+    fontSize: 18,
+    marginTop: 4,
+    fontWeight: '700',
+  },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    paddingTop: 8,
+  },
+
+  brand: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+
+  brandSubtitle: {
+    color: '#a78bfa',
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: -2,
+  },
+
+  aboutButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#171722',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#29293a',
+  },
+
+  aboutButtonText: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '800',
+  },
+
+  balanceCard: {
+    backgroundColor: '#151522',
+    borderRadius: 24,
+    padding: 22,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#27273a',
+  },
+
+  walletBalanceCard: {
+    backgroundColor: '#151522',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#27273a',
+    marginBottom: 24,
+  },
+
+  balanceLabel: {
+    color: '#9b9bab',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  balance: {
+    color: '#ffffff',
+    fontSize: 44,
+    fontWeight: '900',
+    marginTop: 6,
+  },
+
+  coinsLabel: {
+    color: '#a78bfa',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+
+  tapButton: {
+    marginTop: 18,
+    width: '100%',
+    backgroundColor: '#7c3aed',
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+
+  tapButtonTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '900',
+  },
+
+  tapButtonSub: {
+    color: '#e9ddff',
+    fontSize: 12,
+    marginTop: 3,
+    fontWeight: '700',
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+
+  statCard: {
+    flex: 1,
+    backgroundColor: '#151522',
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#27273a',
+  },
+
+  statIcon: {
+    fontSize: 18,
+    marginBottom: 4,
+  },
+
+  statValue: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '900',
+  },
+
+  statTitle: {
+    color: '#858595',
+    fontSize: 11,
+    marginTop: 2,
+  },
+
+  watchCard: {
+    marginTop: 18,
+    backgroundColor: '#171725',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#29293d',
+  },
+
+  watchTextBox: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
+  watchTitle: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '900',
+  },
+
+  watchSubtitle: {
+    color: '#8f8fa0',
+    fontSize: 12,
+    marginTop: 4,
+    lineHeight: 17,
+  },
+
+  watchButton: {
+    backgroundColor: '#22c55e',
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+
+  watchButtonText: {
+    color: '#ffffff',
+    fontWeight: '900',
+    fontSize: 15,
+  },
+
+  sectionHeader: {
+    marginTop: 24,
+    marginBottom: 12,
+  },
+
+  sectionTitle: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+
+  sectionSubtitle: {
+    color: '#858595',
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  taskCard: {
+    backgroundColor: '#151522',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#27273a',
+  },
+
+  taskCompleted: {
+    opacity: 0.65,
+  },
+
+  taskIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#241b3a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+
+  taskIconText: {
+    color: '#a78bfa',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+
+  taskInfo: {
+    flex: 1,
+  },
+
+  taskTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  taskReward: {
+    color: '#22c55e',
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+
+  taskCode: {
+    color: '#77778a',
+    fontSize: 10,
+    marginTop: 3,
+  },
+
+  taskArrow: {
+    color: '#8d8da0',
+    fontSize: 25,
+    fontWeight: '500',
+    paddingLeft: 8,
+  },
+
+  shareButton: {
+    marginTop: 18,
+    backgroundColor: '#242433',
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#343447',
+  },
+
+  shareButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  resetButton: {
+    marginTop: 10,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+
+  resetButtonText: {
+    color: '#77778a',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  versionText: {
+    color: '#555565',
+    textAlign: 'center',
+    fontSize: 10,
+    marginTop: 6,
+  },
+
+  methodRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+
+  methodButton: {
+    flex: 1,
+    backgroundColor: '#151522',
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#29293a',
+  },
+
+  methodButtonActive: {
+    backgroundColor: '#7c3aed',
+    borderColor: '#7c3aed',
+  },
+
+  methodText: {
+    color: '#888899',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  methodTextActive: {
+    color: '#ffffff',
+  },
+
+  inputLabel: {
+    color: '#bbbbca',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+
+  input: {
+    backgroundColor: '#151522',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#29293a',
+    color: '#ffffff',
+    paddingHorizontal: 15,
+    paddingVertical: 14,
+    fontSize: 14,
+    marginBottom: 14,
+  },
+
+  withdrawButton: {
+    backgroundColor: '#7c3aed',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+
+  withdrawButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+
+  infoCard: {
+    backgroundColor: '#151522',
+    borderRadius: 18,
+    padding: 18,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#27273a',
+  },
+
+  infoTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '900',
+    marginBottom: 10,
+  },
+
+  infoText: {
+    color: '#9999aa',
+    fontSize: 13,
+    marginBottom: 7,
+    lineHeight: 19,
+  },
+
+  taskCoinsValue: {
+    color: '#22c55e',
+    fontSize: 25,
+    fontWeight: '900',
+  },
+
+  bottomNav: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    height: 66,
+    backgroundColor: '#151522',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#29293a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+
+  navButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  navIcon: {
+    fontSize: 20,
+    opacity: 0.6,
+  },
+
+  navText: {
+    color: '#77778a',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+
+  navActive: {
+    color: '#a78bfa',
+    opacity: 1,
+  },
+});
