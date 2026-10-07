@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Vyra Rewards Pro",
+    "name": "Vyra Rewards",
     "slug": "vyra-rewards",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "platforms": ["android"],
     "android": {
-      "package": "com.vyrarewards.earn",
-      "versionCode": 2,
+      "package": "com.vyra.rewards",
+      "versionCode": 3,
       "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
