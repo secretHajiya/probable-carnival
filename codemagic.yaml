@@ -1,8 +1,8 @@
 workflows:
   vyra-apk:
-    name: Vyra Rewards Pro Final
+    name: Vyra Rewards Pro
     max_build_duration: 30
-    instance_type: mac_mini
+    instance_type: linux
     environment:
       node: 20
       java: 17
