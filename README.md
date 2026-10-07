@@ -4,7 +4,7 @@
 
 1. Create a GitHub repository and upload these project files.
 2. On your computer or supported terminal, install dependencies:
-   `npm install`
+   `npm install`j
 3. Install EAS CLI:
    `npm install -g eas-cli`
 4. Sign in:
