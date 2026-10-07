@@ -1,8 +1,8 @@
 workflows:
-vyra_apk:
+vyra-apk:
 name: Vyra Rewards APK
+max_build_duration: 60
 instance_type: mac_mini_m2
-max_build_duration: 30
 
 environment:
   node: 20.18.1
@@ -11,12 +11,17 @@ environment:
 scripts:
   - name: Install dependencies
     script: |
+      set -e
       npm install --legacy-peer-deps
 
-  - name: Build APK
+  - name: Build Android APK
     script: |
       set -e
-      CI=1 npx expo prebuild --platform android
+      export CI=1
+      export NODE_ENV=production
+
+      npx expo prebuild --platform android
+
       cd android
       chmod +x gradlew
       ./gradlew assembleRelease --no-daemon
