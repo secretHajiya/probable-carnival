@@ -8,6 +8,7 @@
     "scheme": "vyrarewards",
     "userInterfaceStyle": "dark",
     "platforms": ["android"],
+    "newArchEnabled": false,
     "plugins": [
       [
         "expo-build-properties",
@@ -20,7 +21,7 @@
     ],
     "android": {
       "package": "com.vyrarewards.earn",
-      "versionCode": 3,
+      "versionCode": 4,
       "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
