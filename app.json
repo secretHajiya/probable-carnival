@@ -8,9 +8,19 @@
     "scheme": "vyrarewards",
     "userInterfaceStyle": "dark",
     "platforms": ["android"],
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
+    ],
     "android": {
       "package": "com.vyrarewards.earn",
-      "versionCode": 2,
+      "versionCode": 3,
       "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
