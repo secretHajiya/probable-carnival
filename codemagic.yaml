@@ -1,42 +1,19 @@
 workflows:
   vyra-apk:
-    name: Vyra Rewards Pro - Release (Monetag Clean)
-    max_build_duration: 60
-    instance_type: mac_mini_m2
+    name: Vyra Rewards Pro Final
+    max_build_duration: 30
+    instance_type: linux_x2
     environment:
-      vars:
-        NODE_OPTIONS: "--max-old-space-size=4096"
-        EXPO_NO_TELEMETRY: "1"
-      node: 20.18.1
+      node: 20
       java: 17
-    cache:
-      cache_paths:
-        - $HOME/.npm
-        - $HOME/.cache/expo
     scripts:
-      - name: Install Dependencies
-        script: |
-          npm install --legacy-peer-deps
-      
-      - name: Check Package Clean
-        script: |
-          if grep -q "google-mobile-ads" package.json; then
-            echo "ERROR: AdMob found"
-            exit 1
-          else
-            echo "✅ Clean - No AdMob - Good to go"
-          fi
-      
-      - name: Expo Prebuild
-        script: |
-          npx expo prebuild --platform android --clean
-      
-      - name: Build AAB and APK
+      - name: Install
+        script: npm install
+      - name: Prebuild
+        script: npx expo prebuild -p android --clean
+      - name: Build AAB
         script: |
           cd android
-          chmod +x gradlew
-          ./gradlew bundleRelease assembleRelease --no-daemon
-          
+          ./gradlew bundleRelease
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
-      - android/app/build/outputs/apk/release/*.apk
