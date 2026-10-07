@@ -1,8 +1,7 @@
 workflows:
   vyra-apk:
-    name: Vyra APK Fast Build
-    instance_type: mac_mini_m2
-    max_build_duration: 30
+    name: Vyra APK Only
+    max_build_duration: 60
 
     environment:
       node: 20.18.1
@@ -13,12 +12,15 @@ workflows:
         script: |
           npm install --legacy-peer-deps
 
-      - name: Build Android APK
+      - name: Expo Prebuild Android
         script: |
-          npx expo prebuild --platform android --non-interactive
+          npx expo prebuild --platform android --clean --non-interactive
+
+      - name: Build APK Release Only
+        script: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease
 
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
