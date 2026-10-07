@@ -4,7 +4,6 @@
     "slug": "vyra-rewards",
     "version": "1.0.2",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.vyra.rewards",
