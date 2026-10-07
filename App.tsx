@@ -1,198 +1,54 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, StyleSheet } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Animated, ScrollView, Share, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Linking } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const MONETAG_DIRECT_LINK = 'https://uplcm.com/4/11966517';
-
-const REFERRAL_APPS = [
-  { id: 1, name: "OPay - N7,200 Bonus", code: "2G7J4", link: "https://opay.ng/s/2G7J4", points: 2500, color: "#00C853", desc: "N7,200 + N100 Airtime + N1,100 Cashback", hot: true },
-  { id: 2, name: "PalmPay - N5,550 Bonus", code: "NSFM3287", link: "https://www.palmpay.com/", points: 2000, color: "#6A1B9A", desc: "Register with NSFM3287" },
-  { id: 3, name: "FairMoney Loan", code: "UAPM5BZ", link: "https://fairmoney.io/", points: 1500, color: "#FF6F00", desc: "Instant loan - Code UAPM5BZ" },
-  { id: 4, name: "Binance Crypto", code: "1205609224", link: "https://www.binance.com/en/activity/referral-entry/CPA?fromActivityPage=true&ref=CPA_00T9W2H95V", points: 1800, color: "#F3BA2F", desc: "ID: 1205609224" },
-  { id: 5, name: "PiggyVest Save", code: "secrethajiya004", link: "https://www.piggyvest.com/", points: 1200, color: "#0D60D8", desc: "Ref: secrethajiya004" },
-  { id: 6, name: "Moniepoint Business", code: "TLEG561", link: "https://moniepoint.com/", points: 1300, color: "#0A2E65", desc: "Code: TLEG561" },
-  { id: 7, name: "Flutterwave Send", code: "OAIH4CJTJI94", link: "https://send.flutterwave.com/", points: 1200, color: "#FB9129", desc: "Code OAIH4CJTJI94 - N1,500" },
-  { id: 8, name: "GTBank GTWorld", code: "GTWORLD", link: "https://www.gtbank.com/", points: 1000, color: "#DD4A00", desc: "GTB Mobile Banking" },
-  { id: 9, name: "Bing Rewards - 500pts", code: "zO7OSSC6Kfo", link: "https://aka.ms/sarefer?referral_hash=zO7OSSC6Kfo", points: 500, color: "#008273", desc: "Earn Gift Cards" },
-  { id: 10, name: "Giftmania Rewards", code: "636858", link: "https://play.google.com/store/apps/details?id=com.giftmania.net", points: 800, color: "#E91E63", desc: "Code 636858 on signup" },
+const TASKS_10 = [
+  { id: 1, name: 'GTBank - GTWorld', bonus: 80, link: 'https://l.ead.me/gtworld', color: '#E3530F' },
+  { id: 2, name: 'PalmPay - 5,550 Bonus', bonus: 100, link: 'https://info.palmpay.com/j4ObFGCq', code: 'NSFM3287', color: '#6C2EB5' },
+  { id: 3, name: 'FairMoney', bonus: 90, link: 'https://fairmoney.io/referral?referral_code=UAPM5BZ', code: 'UAPM5BZ', color: '#1A1A1A' },
+  { id: 4, name: 'Binance', bonus: 120, link: 'https://account.binance.com/register?ref=1205609224', code: '1205609224', color: '#F3BA2F' },
+  { id: 5, name: 'PiggyVest - 1,000 Bonus', bonus: 80, link: 'https://join.piggyvest.com/secrethajiya004', code: 'secrethajiya004', color: '#0D60D8' },
+  { id: 6, name: 'Moniepoint', bonus: 100, link: 'https://join.moniepoint.com?adj_t=15ha060e&rC=TLEG561', code: 'TLEG561', color: '#0047AB' },
+  { id: 7, name: 'Flutterwave Send', bonus: 70, link: 'https://send.flutterwave.com/ref/?code=OAIH4CJTJI94', code: 'OAIH4CJTJI94', color: '#FB9129' },
+  { id: 8, name: 'OPay (saka link)', bonus: 80, link: 'https://opay.com/referral?code=VYRA2026', color: '#00A651' },
+  { id: 9, name: 'Kuda Bank (saka link)', bonus: 80, link: 'https://kuda.com/referral/VYRA2026', color: '#40196D' },
+  { id: 10, name: 'Carbon (saka link)', bonus: 70, link: 'https://getcarbon.co/referral/VYRA2026', color: '#5A2D82' },
 ];
-
-const QUIZ_DATA = [
-  { q: "Wanne app ne ke bada N7,200 bonus?", options: ["PalmPay", "OPay", "Bing", "GTBank"], ans: 1 },
-  { q: "Menene code din PalmPay?", options: ["NSFM3287", "UAPM5BZ", "636858", "2G7J4"], ans: 0 },
-  { q: "Giftmania code din mu menene?", options: ["1205609224", "636858", "TLEG561", "secrethajiya004"], ans: 1 },
-  { q: "Wanne app ke bada 500 points Bing?", options: ["Bing App", "FairMoney", "Moniepoint", "Binance"], ans: 0 },
+const SURVEYS = [
+  { id: 1, q: 'Wanne bank ne kafi amfani dashi kullum?', options: ['OPay','PalmPay','Moniepoint','GTBank'], reward: 30 },
+  { id: 2, q: 'Shin ka taba amfani da Binance?', options: ['Eh','Aa','Zan gwada'], reward: 25 },
+  { id: 3, q: 'Me kafi so a Vyra Rewards?', options: ['Tap to Earn','Tasks','Spin','Wallet'], reward: 30 },
 ];
-
+const QUIZZES = [
+  { id: 1, q: '100 coins = Nawa a Naira?', options: ['N5','N10','N20','N50'], answer: 1, reward: 50 },
+  { id: 2, q: 'Nawa ne minimum withdrawal?', options: ['500','1000','2000','5000'], answer: 1, reward: 50 },
+  { id: 3, q: 'Monetag Direct Link yana ba da + nawa?', options: ['+10','+30','+50','+100'], answer: 2, reward: 40 },
+];
+const STORE = { coins: 'vyra.coins', streak: 'vyra.streak', lastCheckin: 'vyra.lastCheckin', ads: 'vyra.adsWatched', spin: 'vyra.spinDate', scratch: 'vyra.scratch', withdrawals: 'vyra.withdrawals', referral: 'vyra.referral', taps: 'vyra.tapCount', survey: 'vyra.survey', quiz: 'vyra.quiz' };
+const streakRewards = [20, 30, 50, 80, 120, 150, 200];
+const todayKey = () => new Date().toISOString().slice(0, 10);
+const money = (coins: number) => `N${(coins / 10).toFixed(2)}`;
 export default function App() {
-  const [screen, setScreen] = useState('home');
-  const [coins, setCoins] = useState(0);
-  const [claimed, setClaimed] = useState<number[]>([]);
-  const [tapCount, setTapCount] = useState(0);
-  const [quizIndex, setQuizIndex] = useState(0);
-
-  const openMonetag = async () => {
-    try {
-      await Linking.openURL(MONETAG_DIRECT_LINK);
-    } catch (e) {
-      console.log("Monetag error", e);
-    }
-  };
-
-  const handleClaim = async (app: any) => {
-    if (claimed.includes(app.id)) return;
-    try {
-      await Linking.openURL(app.link);
-    } catch {}
-    setCoins(c => c + app.points);
-    setClaimed([...claimed, app.id]);
-    const newTap = tapCount + 1;
-    setTapCount(newTap);
-    if (newTap % 2 === 0) {
-      setTimeout(() => openMonetag(), 800);
-    }
-  };
-
-  const handleCheckIn = () => {
-    setCoins(c => c + 200);
-    setTapCount(t => t + 1);
-    Alert.alert("Check-in Success!", "+200 Coins");
-    openMonetag();
-  };
-
-  const handleSpin = () => {
-    const win = Math.floor(Math.random() * 500) + 100;
-    setCoins(c => c + win);
-    Alert.alert("Spin Win!", `You won ${win} coins!`);
-    openMonetag();
-  };
-
-  const handleQuiz = (optIndex: number) => {
-    if (optIndex === QUIZ_DATA[quizIndex].ans) {
-      setCoins(c => c + 150);
-      Alert.alert("Correct!", "+150 Coins");
-    } else {
-      Alert.alert("Wrong!", "Try next");
-    }
-    if (quizIndex < QUIZ_DATA.length - 1) setQuizIndex(quizIndex + 1);
-    else { setQuizIndex(0); setScreen('home'); }
-  };
-
+  const [screen, setScreen] = useState('home'); const [coins, setCoins] = useState(0); const [streak, setStreak] = useState(0); const [lastCheckin, setLastCheckin] = useState(''); const [adsWatched, setAdsWatched] = useState(0); const [spinDate, setSpinDate] = useState(''); const [scratchCount, setScratchCount] = useState(0); const [tapCount, setTapCount] = useState(0); const [surveyDone, setSurveyDone] = useState([]); const [quizDone, setQuizDone] = useState([]); const [withdrawals, setWithdrawals] = useState([]); const [referral, setReferral] = useState('VYRA-4821'); const [method, setMethod] = useState('Airtime - MTN'); const [amount, setAmount] = useState('1000'); const [phone, setPhone] = useState(''); const [account, setAccount] = useState(''); const [bank, setBank] = useState(''); const pulse = useMemo(() => new Animated.Value(1), []);
+  useEffect(() => { (async () => { try { const pairs = await AsyncStorage.multiGet(Object.values(STORE)); const data = {}; pairs.forEach(([k, v]) => { data[k] = v; }); setCoins(Number(data[STORE.coins] || 0)); setStreak(Number(data[STORE.streak] || 0)); setLastCheckin(data[STORE.lastCheckin] || ''); setAdsWatched(Number(data[STORE.ads] || 0)); setSpinDate(data[STORE.spin] || ''); setWithdrawals(data[STORE.withdrawals] ? JSON.parse(data[STORE.withdrawals]) : []); setReferral(data[STORE.referral] || `VYRA-${Math.floor(1000 + Math.random() * 9000)}`); setTapCount(Number(data[STORE.taps] || 0)); setSurveyDone(data[STORE.survey] ? JSON.parse(data[STORE.survey]) : []); setQuizDone(data[STORE.quiz] ? JSON.parse(data[STORE.quiz]) : []); } catch {} })(); const anim = Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1.05, duration: 900, useNativeDriver: true }), Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true })])); anim.start(); return () => { anim.stop(); }; }, []);
+  const saveCoins = (n) => { setCoins(n); AsyncStorage.setItem(STORE.coins, String(n)); }; const addCoins = (n) => saveCoins(coins + n);
+  const openMonetag = async (reward, type) => { try { await Linking.openURL(MONETAG_DIRECT_LINK); setTimeout(() => { addCoins(reward); const newAds = adsWatched + 1; setAdsWatched(newAds); AsyncStorage.setItem(STORE.ads, String(newAds)); Alert.alert('Reward!', `+${reward} coins daga ${type}!`); }, 1500); } catch { Alert.alert('Error', 'Ba a iya bude ad ba'); } };
+  const handleTap = () => { const newTap = tapCount + 1; setTapCount(newTap); AsyncStorage.setItem(STORE.taps, String(newTap)); addCoins(1); if (newTap % 50 === 0) { Alert.alert('Bonus Tap 50!', 'Ka kai 50 taps! Kalli talla domin +200 bonus.', [{text:'Daga baya', style:'cancel'}, {text:'WATCH AD +200', onPress: () => openMonetag(200, '50 Taps Bonus')}]); } };
+  const watchAd = () => openMonetag(50, 'Watch Ad');
+  const checkin = async () => { if (lastCheckin === todayKey()) return Alert.alert('Already claimed'); const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10); const nextStreak = lastCheckin === yesterday ? (streak % 7) + 1 : 1; const reward = streakRewards[nextStreak - 1]; setStreak(nextStreak); setLastCheckin(todayKey()); saveCoins(coins + reward); await AsyncStorage.multiSet([[STORE.streak, String(nextStreak)], [STORE.lastCheckin, todayKey()]]); Alert.alert('Daily check-in', `Day ${nextStreak}: +${reward} coins!`); };
+  const spin = async () => { if (spinDate === todayKey()) return Alert.alert('Come back tomorrow'); const reward = Math.floor(10 + Math.random() * 91); setSpinDate(todayKey()); await AsyncStorage.setItem(STORE.spin, todayKey()); addCoins(reward); Alert.alert('Lucky spin', `You won ${reward} coins!`); openMonetag(10, 'Spin'); };
+  const scratch = async () => { const saved = await AsyncStorage.getItem(STORE.scratch); const count = saved?.startsWith(todayKey() + ':') ? Number(saved.split(':')[1]) : 0; if (count >= 3) return Alert.alert('Daily limit'); const reward = Math.floor(10 + Math.random() * 41); const next = count + 1; setScratchCount(next); await AsyncStorage.setItem(STORE.scratch, `${todayKey()}:${next}`); addCoins(reward); Alert.alert('Scratch', `You won ${reward} coins!`); };
+  const invite = async () => { try { await Share.share({ message: `Join Vyra Rewards! Code: ${referral}` }); } catch {} };
+  const openTask = async (task) => { try { await Linking.openURL(task.link); setTimeout(() => { addCoins(task.bonus); const newAds = adsWatched + 1; setAdsWatched(newAds); AsyncStorage.setItem(STORE.ads, String(newAds)); Alert.alert('Task Completed', `+${task.bonus} coins daga ${task.name}!`); }, 2000); } catch {} };
+  const doSurvey = (survey) => { Alert.alert(survey.q, 'Zabi daya', survey.options.map((opt) => ({text: opt, onPress: () => { if (surveyDone.includes(String(survey.id))) return Alert.alert('Already done'); addCoins(survey.reward); const newDone = [...surveyDone, String(survey.id)]; setSurveyDone(newDone); AsyncStorage.setItem(STORE.survey, JSON.stringify(newDone)); openMonetag(15, 'Survey'); }}))); };
+  const doQuiz = (quiz) => { Alert.alert(quiz.q, 'Zabi amsa', quiz.options.map((opt, i) => ({text: opt, onPress: () => { if (quizDone.includes(String(quiz.id))) return Alert.alert('Already done'); if (i === quiz.answer) { addCoins(quiz.reward); const newDone = [...quizDone, String(quiz.id)]; setQuizDone(newDone); AsyncStorage.setItem(STORE.quiz, JSON.stringify(newDone)); openMonetag(20, 'Quiz'); Alert.alert('Correct! 🎉', `+${quiz.reward} +20 bonus!`); } else { Alert.alert('Wrong'); } }}))); };
+  const submitWithdrawal = async () => { const value = Number(amount); if (adsWatched < 5) return Alert.alert('Verification', `${adsWatched}/5`, [{text:'WATCH AD NOW', onPress: watchAd}]); if (!value || value < 1000 || value > coins) return Alert.alert('Invalid amount'); let details = method.startsWith('Airtime') ? phone : method === 'Bank Transfer' ? `${bank} / ${account}` : account; if (!details.trim()) return Alert.alert('Missing details'); const item = { id: String(Date.now()), amount: value, method, details, date: new Date().toLocaleDateString(), status: 'Pending' }; const next = [item, ...withdrawals]; setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next)); saveCoins(coins - value); Alert.alert('Submitted'); };
+  const Pill = ({ text, value, color = GREEN }) => (<View style={styles.pill}><Text style={styles.muted}>{text}</Text><Text style={[styles.pillValue,{color}]}>{value}</Text></View>);
+  const Action = ({ title, subtitle, onPress, color = GREEN, disabled = false }) => (<TouchableOpacity disabled={disabled} onPress={onPress} style={[styles.action,{borderColor:color,opacity:disabled?0.5:1}]}><Text style={[styles.actionTitle,{color}]}>{title}</Text>{subtitle ? <Text style={styles.muted}>{subtitle}</Text> : null}</TouchableOpacity>);
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Vyra Rewards</Text>
-        <Text style={styles.coinText}>🪙 {coins}</Text>
-      </View>
-
-      {screen === 'home' && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 15 }}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Daily Rewards</Text>
-            <View style={{ flexDirection: 'row' }}>
-              <TouchableOpacity style={[styles.btn, { marginRight: 10 }]} onPress={handleCheckIn}>
-                <Text style={styles.btnText}>Check-in +200</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, { backgroundColor: '#FF9800' }]} onPress={handleSpin}>
-                <Text style={styles.btnText}>Spin</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', marginVertical: 15 }}>🔥 Top: OPay N7,200</Text>
-
-          <TouchableOpacity style={[styles.appCard, { borderColor: '#00C853', borderWidth: 2 }]} onPress={() => handleClaim(REFERRAL_APPS[0])}>
-            <Text style={{ color: '#00C853', fontWeight: 'bold' }}>{REFERRAL_APPS[0].name} 🔥</Text>
-            <Text style={styles.appDesc}>{REFERRAL_APPS[0].desc}</Text>
-            <Text style={styles.codeText}>{REFERRAL_APPS[0].link}</Text>
-            <View style={styles.claimBtn}><Text style={styles.btnText}>{claimed.includes(1)? '✅ Claimed' : 'Claim 2500'}</Text></View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.btn, { marginTop: 20 }]} onPress={() => setScreen('tasks')}>
-            <Text style={styles.btnText}>View All 10 Tasks →</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.btn, { backgroundColor: '#6A1B9A', marginTop: 10 }]} onPress={() => setScreen('quiz')}>
-            <Text style={styles.btnText}>🧠 Quiz</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
-
-      {screen === 'tasks' && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 15 }}>
-          <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>📋 10 Tasks</Text>
-          {REFERRAL_APPS.map(app => (
-            <View key={app.id} style={[styles.appCard, { borderLeftColor: app.color, borderLeftWidth: 5 }]}>
-              <Text style={[styles.appName, { color: app.color }]}>{app.id}. {app.name}</Text>
-              <Text style={styles.appDesc}>{app.desc}</Text>
-              <Text style={styles.codeText}>Code: {app.code}</Text>
-              <Text style={styles.linkText} numberOfLines={1}>{app.link}</Text>
-              <TouchableOpacity style={[styles.claimBtn, { backgroundColor: claimed.includes(app.id)? 'gray' : app.color }]} onPress={() => handleClaim(app)} disabled={claimed.includes(app.id)}>
-                <Text style={styles.btnText}>{claimed.includes(app.id)? '✅ Done' : `Claim +${app.points}`}</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-
-      {screen === 'quiz' && (
-        <View style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
-          <Text style={{ color: 'white', fontSize: 18, marginBottom: 20 }}>{QUIZ_DATA[quizIndex].q}</Text>
-          {QUIZ_DATA[quizIndex].options.map((opt, i) => (
-            <TouchableOpacity key={i} style={styles.quizOpt} onPress={() => handleQuiz(i)}>
-              <Text style={{ color: 'white' }}>{opt}</Text>
-            </TouchableOpacity>
-          ))}
-          <Text style={{ color: '#888', marginTop: 20 }}>{quizIndex + 1} / {QUIZ_DATA.length}</Text>
-        </View>
-      )}
-
-      {screen === 'wallet' && (
-        <View style={{ flex: 1, padding: 20 }}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Wallet</Text>
-            <Text style={{ fontSize: 40, color: '#00C853', fontWeight: 'bold' }}>{coins} 🪙</Text>
-            <Text style={{ color: '#aaa' }}>~ N{Math.floor(coins/10)}</Text>
-          </View>
-          <View style={[styles.card, { marginTop: 15 }]}>
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Withdrawal</Text>
-            <Text style={{ color: '#aaa', marginTop: 5 }}>Complete 3 Tasks to withdraw.</Text>
-            <Text style={{ color: claimed.length >= 3? '#00C853' : '#FF5252', marginTop: 10 }}>{claimed.length}/3 {claimed.length >= 3? '✅' : '❌'}</Text>
-          </View>
-          <TouchableOpacity style={[styles.btn, { marginTop: 20, backgroundColor: claimed.length >= 3? '#00C853' : 'gray' }]} disabled={claimed.length < 3} onPress={() => { Alert.alert("Withdraw", "Contact support"); openMonetag(); }}>
-            <Text style={styles.btnText}>Withdraw</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => setScreen('home')} style={styles.navBtn}><Text style={[styles.navText, screen === 'home' && styles.navActive]}>Home</Text></TouchableOpacity>
-        <TouchableOpacity onPress={() => setScreen('tasks')} style={styles.navBtn}><Text style={[styles.navText, screen === 'tasks' && styles.navActive]}>Tasks</Text></TouchableOpacity>
-        <TouchableOpacity onPress={() => setScreen('quiz')} style={styles.navBtn}><Text style={[styles.navText, screen === 'quiz' && styles.navActive]}>Quiz</Text></TouchableOpacity>
-        <TouchableOpacity onPress={() => setScreen('wallet')} style={styles.navBtn}><Text style={[styles.navText, screen === 'wallet' && styles.navActive]}>Wallet</Text></TouchableOpacity>
-      </View>
-    </View>
+    <View style={styles.root}><StatusBar barStyle="light-content" backgroundColor={BG} /><View style={styles.header}><View><Text style={styles.brand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text><Text style={styles.muted}>Earn • Save • Enjoy</Text></View><TouchableOpacity onPress={() => setScreen('wallet')} style={styles.avatar}><Text style={{color:GOLD,fontWeight:'900'}}>V</Text></TouchableOpacity></View><View style={styles.pills}><Pill text="WALLET" value={`${coins.toLocaleString()}`} /><Pill text="STREAK" value={`${streak} DAYS`} color={GOLD} /><Pill text="TAPS" value={`${tapCount}`} color={GOLD} /></View><ScrollView contentContainerStyle={{paddingBottom:20}} showsVerticalScrollIndicator={false}>{screen === 'home' ? <><View style={styles.scoreCard}><Text style={styles.muted}>TOTAL SCORE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)} estimated value</Text><Text style={styles.muted}>{50 - (tapCount % 50)} taps to +200 bonus</Text></View><TouchableOpacity activeOpacity={0.8} onPress={handleTap}><Animated.View style={[styles.tapCircle,{transform:[{scale:pulse}]}]}><Text style={styles.tapSmall}>VYRA</Text><Text style={styles.tapTitle}>TAP TO</Text><Text style={styles.tapTitle}>EARN</Text><Text style={styles.tapSmall}>+1 COIN</Text></Animated.View></TouchableOpacity><TouchableOpacity onPress={handleTap} style={styles.tapHit}><Text style={styles.muted}>Tap the glowing circle to earn a coin</Text></TouchableOpacity><View style={styles.threeCards}><Action title="2X SPEED" subtitle={`${50 - (tapCount % 50)} to bonus`} onPress={() => Alert.alert('Bonus', `${50 - (tapCount % 50)} taps to +200`)} color={GOLD}/><Action title="WALLET" subtitle="Your balance" onPress={() => setScreen('wallet')}/><Action title="TASKS" subtitle="7+Survey+Quiz" onPress={() => setScreen('shop')} color={GOLD}/></View><TouchableOpacity onPress={watchAd} style={[styles.watch,{backgroundColor:GREEN}]}><Text style={styles.watchTitle}>▶ WATCH AD +50 COINS</Text><Text style={styles.watchSub}>Monetag - {MONETAG_DIRECT_LINK}</Text></TouchableOpacity><View style={styles.row}><Action title="DAILY CHECK-IN" subtitle={`+${streakRewards[lastCheckin === todayKey() ? Math.max(0,streak-1) : streak % 7]} coins`} onPress={checkin} disabled={lastCheckin === todayKey()}/><Action title="SCRATCH CARD" subtitle={`${scratchCount}/3 used`} onPress={scratch} color={GOLD}/></View><TouchableOpacity onPress={spin} style={styles.spin}><Text style={styles.actionTitle}>🎡 SPIN & WIN</Text><Text style={styles.muted}>1 free spin daily • Win 10–100 coins</Text></TouchableOpacity><TouchableOpacity onPress={invite} style={styles.invite}><Text style={styles.inviteTitle}>✦ INVITE FRIEND +200</Text><Text style={styles.inviteSub}>Your code: {referral}</Text></TouchableOpacity></> : screen === 'wallet' ? <><Text style={styles.pageTitle}>My Wallet</Text><View style={styles.walletCard}><Text style={styles.muted}>AVAILABLE BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)} Nigerian Naira</Text></View><Text style={styles.sectionTitle}>WITHDRAW</Text><View style={styles.methodRow}>{['Airtime - MTN','Airtime - Airtel','Airtime - Glo','Airtime - 9Mobile','OPay','PalmPay','Bank Transfer'].map(m=><TouchableOpacity key={m} onPress={()=>setMethod(m)} style={[styles.method,{borderColor:method===m?GREEN:BORDER,backgroundColor:method===m?'#12362B':CARD}]}><Text style={{color:TEXT,fontSize:12}}>{m}</Text></TouchableOpacity>)}</View><Text style={styles.label}>Amount (coins)</Text><TextInput value={amount} onChangeText={setAmount} keyboardType="number-pad" style={styles.input} placeholder="1000" placeholderTextColor="#777"/>{method.startsWith('Airtime') ? <><Text style={styles.label}>Phone number</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.input} placeholder="08012345678" placeholderTextColor="#777"/></> : <><Text style={styles.label}>Bank name</Text><TextInput value={bank} onChangeText={setBank} style={styles.input} placeholder="Bank name" placeholderTextColor="#777"/><Text style={styles.label}>Account number</Text><TextInput value={account} onChangeText={setAccount} keyboardType="number-pad" style={styles.input} placeholder="Account number" placeholderTextColor="#777"/></>}<Text style={[styles.muted,{marginHorizontal:16,marginTop:8}]}>Ads watched: {adsWatched}/5 required</Text><TouchableOpacity onPress={submitWithdrawal} disabled={coins<1000} style={[styles.primaryButton,{opacity:coins<1000?0.45:1}]}><Text style={styles.primaryText}>{adsWatched<5 ? `WATCH ${5-adsWatched} MORE ADS` : 'REQUEST WITHDRAWAL'}</Text></TouchableOpacity></> : <><Text style={styles.pageTitle}>Tasks, Survey & Quiz</Text><Text style={styles.sectionTitle}>YOUR 7 REFERRAL LINKS</Text>{TASKS_10.map(item=><View key={item.id} style={styles.shopItem}><View style={{flex:1}}><Text style={styles.leaderName}>{item.id}. {item.name}</Text><Text style={styles.muted}>+{item.bonus} coins {item.code ? `Code: ${item.code}` : ''}</Text></View><TouchableOpacity onPress={()=>openTask(item)} style={{backgroundColor:item.color, paddingHorizontal:14, paddingVertical:8, borderRadius:8, marginLeft:8}}><Text style={{color:'#fff',fontWeight:'800', fontSize:12}}>OPEN</Text></TouchableOpacity></View>)}<Text style={[styles.sectionTitle,{marginTop:20}]}>📝 SURVEY</Text>{SURVEYS.map(s=><View key={s.id} style={styles.shopItem}><View style={{flex:1}}><Text style={styles.leaderName}>{s.q}</Text><Text style={styles.muted}>+{s.reward} +15 bonus</Text></View><TouchableOpacity onPress={()=>doSurvey(s)} disabled={surveyDone.includes(String(s.id))} style={{backgroundColor: surveyDone.includes(String(s.id)) ? '#555' : GREEN, paddingHorizontal:14, paddingVertical:8, borderRadius:8, marginLeft:8}}><Text style={{color: surveyDone.includes(String(s.id)) ? '#999' : '#000', fontWeight:'800', fontSize:12}}>{surveyDone.includes(String(s.id)) ? 'DONE' : 'ANSWER'}</Text></TouchableOpacity></View>)}<Text style={[styles.sectionTitle,{marginTop:20}]}>🧠 QUIZ</Text>{QUIZZES.map(q=><View key={q.id} style={styles.shopItem}><View style={{flex:1}}><Text style={styles.leaderName}>{q.q}</Text><Text style={styles.muted}>+{q.reward} +20 bonus</Text></View><TouchableOpacity onPress={()=>doQuiz(q)} disabled={quizDone.includes(String(q.id))} style={{backgroundColor: quizDone.includes(String(q.id)) ? '#555' : GOLD, paddingHorizontal:14, paddingVertical:8, borderRadius:8, marginLeft:8}}><Text style={{color: quizDone.includes(String(q.id)) ? '#999' : '#000', fontWeight:'800', fontSize:12}}>{quizDone.includes(String(q.id)) ? 'DONE' : 'PLAY'}</Text></TouchableOpacity></View>)}</>}</ScrollView><View style={styles.bottomNav}><TouchableOpacity onPress={()=>setScreen('home')}><Text style={[styles.navText,screen==='home'&&{color:GREEN}]}>⌂ Home</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('wallet')}><Text style={[styles.navText,screen==='wallet'&&{color:GREEN}]}>◉ Wallet</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('shop')}><Text style={[styles.navText,screen==='shop'&&{color:GREEN}]}>◇ Tasks+Survey+Quiz</Text></TouchableOpacity></View></View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a', paddingTop: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', padding: 15, backgroundColor: '#1e293b' },
-  headerTitle: { color: 'white', fontSize: 22, fontWeight: 'bold' },
-  coinText: { color: '#FFD700', fontSize: 18, fontWeight: 'bold' },
-  card: { backgroundColor: '#1e293b', padding: 15, borderRadius: 12 },
-  cardTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 10 },
-  btn: { backgroundColor: '#00C853', padding: 12, borderRadius: 8, flex: 1, alignItems: 'center' },
-  btnText: { color: 'white', fontWeight: 'bold' },
-  appCard: { backgroundColor: '#1e293b', padding: 15, borderRadius: 12, marginBottom: 12 },
-  appName: { fontSize: 15, fontWeight: 'bold' },
-  appDesc: { color: '#94a3b8', marginTop: 4, fontSize: 13 },
-  codeText: { color: '#facc15', marginTop: 4, fontWeight: 'bold', fontSize: 12 },
-  linkText: { color: '#60a5fa', fontSize: 10, marginTop: 3 },
-  claimBtn: { backgroundColor: '#00C853', padding: 10, borderRadius: 8, marginTop: 10, alignItems: 'center' },
-  quizOpt: { backgroundColor: '#1e293b', padding: 15, borderRadius: 10, marginBottom: 10, borderWidth: 1, borderColor: '#334155' },
-  bottomNav: { flexDirection: 'row', backgroundColor: '#1e293b', padding: 10, justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#334155' },
-  navBtn: { padding: 5 },
-  navText: { color: '#64748b' },
-  navActive: { color: '#00C853', fontWeight: 'bold' },
-});
+const BG='#0A0A14', CARD='#1E1E2E', GREEN='#00FF88', GOLD='#FFD700', TEXT='#F5F5FA', MUTED='#9B9BAF', BORDER='#343449';
+const styles=StyleSheet.create({
+  root:{flex:1,backgroundColor:BG,paddingTop:8}, header:{paddingHorizontal:18,paddingVertical:12,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}, brand:{color:TEXT,fontSize:20,fontWeight:'900',letterSpacing:1}, muted:{color:MUTED,fontSize:12}, avatar:{width:38,height:38,borderRadius:19,backgroundColor:CARD,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:GOLD}, pills:{flexDirection:'row',gap:7,paddingHorizontal:14,marginBottom:8}, pill:{flex:1,backgroundColor:CARD,borderRadius:12,padding:10}, pillValue:{fontSize:13,fontWeight:'900',marginTop:4}, scoreCard:{alignItems:'center',padding:12,marginHorizontal:16,backgroundColor:CARD,borderRadius:18}, score:{fontSize:34,fontWeight:'900',color:TEXT,marginVertical:3}, naira:{color:GREEN,fontSize:13,fontWeight:'700'}, tapCircle:{alignSelf:'center',marginTop:20,width:190,height:190,borderRadius:95,borderWidth:3,borderColor:GREEN,backgroundColor:'#10271F',alignItems:'center',justifyContent:'center',shadowColor:GREEN,shadowOpacity:0.65,shadowRadius:22,elevation:12}, tapSmall:{color:GREEN,fontSize:12,fontWeight:'900',letterSpacing:3}, tapTitle:{color:TEXT,fontSize:25,fontWeight:'900',letterSpacing:1}, tapHit:{alignItems:'center',paddingVertical:10}, threeCards:{flexDirection:'row',gap:8,paddingHorizontal:14,marginTop:4}, action:{flex:1,minHeight:66,backgroundColor:CARD,borderRadius:13,borderWidth:1,padding:10,alignItems:'center',justifyContent:'center',marginBottom:8}, actionTitle:{fontWeight:'900',fontSize:12,textAlign:'center'}, watch:{marginHorizontal:14,marginTop:6,borderRadius:15,padding:17,alignItems:'center'}, watchTitle:{color:BG,fontWeight:'900',fontSize:16}, watchSub:{color:'#163D2D',fontSize:11,marginTop:4}, row:{flexDirection:'row',gap:8,paddingHorizontal:14,marginTop:10}, spin:{marginHorizontal:14,marginTop:4,backgroundColor:CARD,borderRadius:14,borderWidth:1,borderColor:'#755F15',padding:14,alignItems:'center'}, invite:{margin:14,backgroundColor:'#332A08',borderColor:GOLD,borderWidth:1,borderRadius:15,padding:16,alignItems:'center'}, inviteTitle:{color:GOLD,fontSize:16,fontWeight:'900'}, inviteSub:{color:'#E5D88D',fontSize:12,marginTop:5}, sectionTitle:{color:TEXT,fontWeight:'900',fontSize:13,marginHorizontal:16,marginTop:14,marginBottom:8}, shopItem:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginHorizontal:14,marginTop:8,padding:14,backgroundColor:CARD,borderRadius:12}, leaderName:{color:TEXT,fontSize:13,fontWeight:'700',flex:1}, bottomNav:{flexDirection:'row',justifyContent:'space-around',paddingVertical:10,borderTopWidth:1,borderColor:BORDER}, navText:{color:MUTED,fontSize:13,fontWeight:'700'}, pageTitle:{fontSize:25,fontWeight:'900',color:TEXT,margin:16}, walletCard:{backgroundColor:CARD,borderRadius:16,marginHorizontal:14,padding:18,alignItems:'center'}, label:{color:MUTED,fontSize:12,marginHorizontal:16,marginTop:12,marginBottom:5}, methodRow:{flexDirection:'row',flexWrap:'wrap',gap:7,margi
