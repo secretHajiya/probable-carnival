@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Vyra Rewards",
+    "slug": "vyra-rewards",
+    "version": "1.0.2",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "android": {
+      "package": "com.vyra.rewards",
+      "versionCode": 3,
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
+    },
+    "platforms": [
+      "android"
+    ],
+    "splash": {
+      "backgroundColor": "#09090f",
+      "resizeMode": "contain"
+    }
+  }
+}
