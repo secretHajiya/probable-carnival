@@ -1,53 +1,26 @@
 workflows:
-  vyra-apk:
-    name: Vyra Rewards Pro - Release (Monetag Clean)
+  android-workflow:
+    name: Android Workflow
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
-      vars:
-        NODE_OPTIONS: "--max-old-space-size=4096"
-        EXPO_NO_TELEMETRY: "1"
-      node: 20.18.1
-      java: 17
-    cache:
-      cache_paths:
-        - $HOME/.npm
-        - $HOME/.cache/expo
+      node: 20
+      groups:
+        - google_play
     scripts:
-      - name: Clean old AdMob
+      - name: Install dependencies
         script: |
-          echo "Cleaning AdMob..."
-          rm -rf android
-          rm -rf node_modules
-          rm -f package-lock.json
-          npm cache clean --force
-      
-      - name: Install Dependencies (Clean)
+          npm ci
+      - name: Expo prebuild
         script: |
-          npm install --legacy-peer-deps
-      
-      - name: Check Package
+          npx expo prebuild --platform android --clean
+      - name: Build Android AAB
         script: |
-          echo "Checking for AdMob..."
-          if grep -q "google-mobile-ads" package.json; then
-            echo "ERROR: AdMob still in package.json! Remove it!"
-            exit 1
-          else
-            echo "✅ Clean - No AdMob found"
-          fi
-      
-      - name: Expo Prebuild Android Clean
-        script: |
-          npx expo prebuild --platform android --clean --no-install
-      
-      - name: Build Release AAB and APK
-        script: |
-          cd android
-          chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon
-          ./gradlew assembleRelease --no-daemon
-          
+          cd android && ./gradlew bundleRelease
     artifacts:
-      - android/app/build/outputs/bundle/release/*.aab
-      - android/app/build/outputs/apk/release/*.apk
-      - android/app/build/outputs/apk/release/output-metadata.json
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - your-email@gmail.com
