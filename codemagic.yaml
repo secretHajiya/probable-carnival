@@ -1,16 +1,16 @@
 workflows:
   vyra-apk:
     name: Vyra APK Build
-    max_build_duration: 60
     instance_type: linux
+    max_build_duration: 60
     environment:
       node: 20.18.1
       java: 17
     scripts:
-      - name: Install dependencies
+      - name: Install deps
         script: |
           npm install --legacy-peer-deps
-      - name: Expo Prebuild Android
+      - name: Prebuild
         script: |
           npx expo prebuild --platform android --clean --non-interactive
       - name: Build APK
