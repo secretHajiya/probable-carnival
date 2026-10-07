@@ -1,54 +1,868 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Animated, ScrollView, Share, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Linking } from 'react-native';
+import {
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+/*
+ * ============================================================
+ * VYRA REWARDS
+ * ============================================================
+ * Simple rewards / points application.
+ *
+ * Storage:
+ *   vyra_points
+ *   vyra_taps
+ *   vyra_completed
+ *   vyra_email
+ *   vyra_withdraw_method
+ *   vyra_first_launch
+ *
+ * IMPORTANT:
+ * This app stores points locally on the device.
+ * The withdraw screen currently creates a request message only.
+ * A real payment backend/API is required for actual withdrawals.
+ * ============================================================
+ */
+
+const APP_NAME = 'Vyra Rewards';
+const APP_VERSION = '1.0.0';
+
 const MONETAG_DIRECT_LINK = 'https://uplcm.com/4/11966517';
-const TASKS_10 = [
-  { id: 1, name: 'GTBank - GTWorld', bonus: 80, link: 'https://l.ead.me/gtworld', color: '#E3530F' },
-  { id: 2, name: 'PalmPay - 5,550 Bonus', bonus: 100, link: 'https://info.palmpay.com/j4ObFGCq', code: 'NSFM3287', color: '#6C2EB5' },
-  { id: 3, name: 'FairMoney', bonus: 90, link: 'https://fairmoney.io/referral?referral_code=UAPM5BZ', code: 'UAPM5BZ', color: '#1A1A1A' },
-  { id: 4, name: 'Binance', bonus: 120, link: 'https://account.binance.com/register?ref=1205609224', code: '1205609224', color: '#F3BA2F' },
-  { id: 5, name: 'PiggyVest - 1,000 Bonus', bonus: 80, link: 'https://join.piggyvest.com/secrethajiya004', code: 'secrethajiya004', color: '#0D60D8' },
-  { id: 6, name: 'Moniepoint', bonus: 100, link: 'https://join.moniepoint.com?adj_t=15ha060e&rC=TLEG561', code: 'TLEG561', color: '#0047AB' },
-  { id: 7, name: 'Flutterwave Send', bonus: 70, link: 'https://send.flutterwave.com/ref/?code=OAIH4CJTJI94', code: 'OAIH4CJTJI94', color: '#FB9129' },
-  { id: 8, name: 'OPay (saka link)', bonus: 80, link: 'https://opay.com/referral?code=VYRA2026', color: '#00A651' },
-  { id: 9, name: 'Kuda Bank (saka link)', bonus: 80, link: 'https://kuda.com/referral/VYRA2026', color: '#40196D' },
-  { id: 10, name: 'Carbon (saka link)', bonus: 70, link: 'https://getcarbon.co/referral/VYRA2026', color: '#5A2D82' },
+
+const BG = '#0A0A0A';
+const CARD = '#1A1A1A';
+const CARD_2 = '#202020';
+const BORDER = '#2A2A2A';
+
+const GOLD = '#FFD700';
+const GREEN = '#00FF88';
+const RED = '#FF4D4D';
+const BLUE = '#4DA6FF';
+const PURPLE = '#9B59FF';
+
+const TEXT = '#FFFFFF';
+const MUTED = '#888888';
+const DARK_TEXT = '#0A0A0A';
+
+const POINTS_PER_TAP = 2;
+const WATCH_AD_POINTS = 50;
+const MIN_WITHDRAW_POINTS = 5000;
+
+const STORAGE_POINTS = 'vyra_points';
+const STORAGE_TAPS = 'vyra_taps';
+const STORAGE_COMPLETED = 'vyra_completed';
+const STORAGE_EMAIL = 'vyra_email';
+const STORAGE_METHOD = 'vyra_withdraw_method';
+const STORAGE_FIRST_LAUNCH = 'vyra_first_launch';
+
+/*
+ * ============================================================
+ * TASK LIST
+ * ============================================================
+ */
+
+type Task = {
+  id: number;
+  name: string;
+  bonus: number;
+  link: string;
+  code?: string;
+  color: string;
+  description?: string;
+};
+
+const TASKS_10: Task[] = [
+  {
+    id: 1,
+    name: 'GTBank - GTWorld',
+    bonus: 80,
+    link: 'https://l.ead.me/gtworld',
+    color: '#E3530F',
+    description: 'Open the GTWorld offer.',
+  },
+  {
+    id: 2,
+    name: 'PalmPay - 5,550 Bonus',
+    bonus: 100,
+    link: 'https://info.palmpay.com/j4ObFGCq',
+    code: 'NSFM3287',
+    color: '#6C2EB5',
+    description: 'Use the referral code when required.',
+  },
+  {
+    id: 3,
+    name: 'FairMoney',
+    bonus: 90,
+    link: 'https://fairmoney.io/referral?referral_code=UAPM5BZ',
+    code: 'UAPM5BZ',
+    color: '#1A1A1A',
+    description: 'Open the FairMoney referral offer.',
+  },
+  {
+    id: 4,
+    name: 'Binance',
+    bonus: 120,
+    link: 'https://account.binance.com/register?ref=1205609224',
+    code: '1205609224',
+    color: '#F3BA2F',
+    description: 'Open the Binance referral page.',
+  },
+  {
+    id: 5,
+    name: 'PiggyVest - 1,000 Bonus',
+    bonus: 80,
+    link: 'https://join.piggyvest.com/secrethajiya004',
+    code: 'secrethajiya004',
+    color: '#0D60D8',
+    description: 'Open the PiggyVest offer.',
+  },
+  {
+    id: 6,
+    name: 'Moniepoint',
+    bonus: 100,
+    link: 'https://join.moniepoint.com?adj_t=15ha060e&rC=TLEG561',
+    code: 'TLEG561',
+    color: '#0047AB',
+    description: 'Open the Moniepoint referral offer.',
+  },
+  {
+    id: 7,
+    name: 'Flutterwave Send',
+    bonus: 70,
+    link: 'https://send.flutterwave.com/ref/?code=OAIH4CJTJI94',
+    code: 'OAIH4CJTJI94',
+    color: '#FB9129',
+    description: 'Open Flutterwave Send referral.',
+  },
+  {
+    id: 8,
+    name: 'OPay',
+    bonus: 80,
+    link: 'https://opay.com',
+    color: '#00A651',
+    description: 'Open the OPay website.',
+  },
+  {
+    id: 9,
+    name: 'Kuda Bank',
+    bonus: 80,
+    link: 'https://kuda.com',
+    color: '#40196D',
+    description: 'Open the Kuda website.',
+  },
+  {
+    id: 10,
+    name: 'Carbon',
+    bonus: 70,
+    link: 'https://getcarbon.co',
+    color: '#5A2D82',
+    description: 'Open the Carbon website.',
+  },
 ];
-const SURVEYS = [
-  { id: 1, q: 'Wanne bank ne kafi amfani dashi kullum?', options: ['OPay','PalmPay','Moniepoint','GTBank'], reward: 30 },
-  { id: 2, q: 'Shin ka taba amfani da Binance?', options: ['Eh','Aa','Zan gwada'], reward: 25 },
-  { id: 3, q: 'Me kafi so a Vyra Rewards?', options: ['Tap to Earn','Tasks','Spin','Wallet'], reward: 30 },
-];
-const QUIZZES = [
-  { id: 1, q: '100 coins = Nawa a Naira?', options: ['N5','N10','N20','N50'], answer: 1, reward: 50 },
-  { id: 2, q: 'Nawa ne minimum withdrawal?', options: ['500','1000','2000','5000'], answer: 1, reward: 50 },
-  { id: 3, q: 'Monetag Direct Link yana ba da + nawa?', options: ['+10','+30','+50','+100'], answer: 2, reward: 40 },
-];
-const STORE = { coins: 'vyra.coins', streak: 'vyra.streak', lastCheckin: 'vyra.lastCheckin', ads: 'vyra.adsWatched', spin: 'vyra.spinDate', scratch: 'vyra.scratch', withdrawals: 'vyra.withdrawals', referral: 'vyra.referral', taps: 'vyra.tapCount', survey: 'vyra.survey', quiz: 'vyra.quiz' };
-const streakRewards = [20, 30, 50, 80, 120, 150, 200];
-const todayKey = () => new Date().toISOString().slice(0, 10);
-const money = (coins: number) => `N${(coins / 10).toFixed(2)}`;
-export default function App() {
-  const [screen, setScreen] = useState('home'); const [coins, setCoins] = useState(0); const [streak, setStreak] = useState(0); const [lastCheckin, setLastCheckin] = useState(''); const [adsWatched, setAdsWatched] = useState(0); const [spinDate, setSpinDate] = useState(''); const [scratchCount, setScratchCount] = useState(0); const [tapCount, setTapCount] = useState(0); const [surveyDone, setSurveyDone] = useState([]); const [quizDone, setQuizDone] = useState([]); const [withdrawals, setWithdrawals] = useState([]); const [referral, setReferral] = useState('VYRA-4821'); const [method, setMethod] = useState('Airtime - MTN'); const [amount, setAmount] = useState('1000'); const [phone, setPhone] = useState(''); const [account, setAccount] = useState(''); const [bank, setBank] = useState(''); const pulse = useMemo(() => new Animated.Value(1), []);
-  useEffect(() => { (async () => { try { const pairs = await AsyncStorage.multiGet(Object.values(STORE)); const data = {}; pairs.forEach(([k, v]) => { data[k] = v; }); setCoins(Number(data[STORE.coins] || 0)); setStreak(Number(data[STORE.streak] || 0)); setLastCheckin(data[STORE.lastCheckin] || ''); setAdsWatched(Number(data[STORE.ads] || 0)); setSpinDate(data[STORE.spin] || ''); setWithdrawals(data[STORE.withdrawals] ? JSON.parse(data[STORE.withdrawals]) : []); setReferral(data[STORE.referral] || `VYRA-${Math.floor(1000 + Math.random() * 9000)}`); setTapCount(Number(data[STORE.taps] || 0)); setSurveyDone(data[STORE.survey] ? JSON.parse(data[STORE.survey]) : []); setQuizDone(data[STORE.quiz] ? JSON.parse(data[STORE.quiz]) : []); } catch {} })(); const anim = Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1.05, duration: 900, useNativeDriver: true }), Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true })])); anim.start(); return () => { anim.stop(); }; }, []);
-  const saveCoins = (n) => { setCoins(n); AsyncStorage.setItem(STORE.coins, String(n)); }; const addCoins = (n) => saveCoins(coins + n);
-  const openMonetag = async (reward, type) => { try { await Linking.openURL(MONETAG_DIRECT_LINK); setTimeout(() => { addCoins(reward); const newAds = adsWatched + 1; setAdsWatched(newAds); AsyncStorage.setItem(STORE.ads, String(newAds)); Alert.alert('Reward!', `+${reward} coins daga ${type}!`); }, 1500); } catch { Alert.alert('Error', 'Ba a iya bude ad ba'); } };
-  const handleTap = () => { const newTap = tapCount + 1; setTapCount(newTap); AsyncStorage.setItem(STORE.taps, String(newTap)); addCoins(1); if (newTap % 50 === 0) { Alert.alert('Bonus Tap 50!', 'Ka kai 50 taps! Kalli talla domin +200 bonus.', [{text:'Daga baya', style:'cancel'}, {text:'WATCH AD +200', onPress: () => openMonetag(200, '50 Taps Bonus')}]); } };
-  const watchAd = () => openMonetag(50, 'Watch Ad');
-  const checkin = async () => { if (lastCheckin === todayKey()) return Alert.alert('Already claimed'); const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10); const nextStreak = lastCheckin === yesterday ? (streak % 7) + 1 : 1; const reward = streakRewards[nextStreak - 1]; setStreak(nextStreak); setLastCheckin(todayKey()); saveCoins(coins + reward); await AsyncStorage.multiSet([[STORE.streak, String(nextStreak)], [STORE.lastCheckin, todayKey()]]); Alert.alert('Daily check-in', `Day ${nextStreak}: +${reward} coins!`); };
-  const spin = async () => { if (spinDate === todayKey()) return Alert.alert('Come back tomorrow'); const reward = Math.floor(10 + Math.random() * 91); setSpinDate(todayKey()); await AsyncStorage.setItem(STORE.spin, todayKey()); addCoins(reward); Alert.alert('Lucky spin', `You won ${reward} coins!`); openMonetag(10, 'Spin'); };
-  const scratch = async () => { const saved = await AsyncStorage.getItem(STORE.scratch); const count = saved?.startsWith(todayKey() + ':') ? Number(saved.split(':')[1]) : 0; if (count >= 3) return Alert.alert('Daily limit'); const reward = Math.floor(10 + Math.random() * 41); const next = count + 1; setScratchCount(next); await AsyncStorage.setItem(STORE.scratch, `${todayKey()}:${next}`); addCoins(reward); Alert.alert('Scratch', `You won ${reward} coins!`); };
-  const invite = async () => { try { await Share.share({ message: `Join Vyra Rewards! Code: ${referral}` }); } catch {} };
-  const openTask = async (task) => { try { await Linking.openURL(task.link); setTimeout(() => { addCoins(task.bonus); const newAds = adsWatched + 1; setAdsWatched(newAds); AsyncStorage.setItem(STORE.ads, String(newAds)); Alert.alert('Task Completed', `+${task.bonus} coins daga ${task.name}!`); }, 2000); } catch {} };
-  const doSurvey = (survey) => { Alert.alert(survey.q, 'Zabi daya', survey.options.map((opt) => ({text: opt, onPress: () => { if (surveyDone.includes(String(survey.id))) return Alert.alert('Already done'); addCoins(survey.reward); const newDone = [...surveyDone, String(survey.id)]; setSurveyDone(newDone); AsyncStorage.setItem(STORE.survey, JSON.stringify(newDone)); openMonetag(15, 'Survey'); }}))); };
-  const doQuiz = (quiz) => { Alert.alert(quiz.q, 'Zabi amsa', quiz.options.map((opt, i) => ({text: opt, onPress: () => { if (quizDone.includes(String(quiz.id))) return Alert.alert('Already done'); if (i === quiz.answer) { addCoins(quiz.reward); const newDone = [...quizDone, String(quiz.id)]; setQuizDone(newDone); AsyncStorage.setItem(STORE.quiz, JSON.stringify(newDone)); openMonetag(20, 'Quiz'); Alert.alert('Correct! 🎉', `+${quiz.reward} +20 bonus!`); } else { Alert.alert('Wrong'); } }}))); };
-  const submitWithdrawal = async () => { const value = Number(amount); if (adsWatched < 5) return Alert.alert('Verification', `${adsWatched}/5`, [{text:'WATCH AD NOW', onPress: watchAd}]); if (!value || value < 1000 || value > coins) return Alert.alert('Invalid amount'); let details = method.startsWith('Airtime') ? phone : method === 'Bank Transfer' ? `${bank} / ${account}` : account; if (!details.trim()) return Alert.alert('Missing details'); const item = { id: String(Date.now()), amount: value, method, details, date: new Date().toLocaleDateString(), status: 'Pending' }; const next = [item, ...withdrawals]; setWithdrawals(next); await AsyncStorage.setItem(STORE.withdrawals, JSON.stringify(next)); saveCoins(coins - value); Alert.alert('Submitted'); };
-  const Pill = ({ text, value, color = GREEN }) => (<View style={styles.pill}><Text style={styles.muted}>{text}</Text><Text style={[styles.pillValue,{color}]}>{value}</Text></View>);
-  const Action = ({ title, subtitle, onPress, color = GREEN, disabled = false }) => (<TouchableOpacity disabled={disabled} onPress={onPress} style={[styles.action,{borderColor:color,opacity:disabled?0.5:1}]}><Text style={[styles.actionTitle,{color}]}>{title}</Text>{subtitle ? <Text style={styles.muted}>{subtitle}</Text> : null}</TouchableOpacity>);
+
+/*
+ * ============================================================
+ * SMALL HELPER COMPONENTS
+ * ============================================================
+ */
+
+type StatCardProps = {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  accent?: string;
+};
+
+function StatCard({
+  title,
+  value,
+  subtitle,
+  accent = GOLD,
+}: StatCardProps) {
   return (
-    <View style={styles.root}><StatusBar barStyle="light-content" backgroundColor={BG} /><View style={styles.header}><View><Text style={styles.brand}>VYRA <Text style={{color:GREEN}}>REWARDS</Text></Text><Text style={styles.muted}>Earn • Save • Enjoy</Text></View><TouchableOpacity onPress={() => setScreen('wallet')} style={styles.avatar}><Text style={{color:GOLD,fontWeight:'900'}}>V</Text></TouchableOpacity></View><View style={styles.pills}><Pill text="WALLET" value={`${coins.toLocaleString()}`} /><Pill text="STREAK" value={`${streak} DAYS`} color={GOLD} /><Pill text="TAPS" value={`${tapCount}`} color={GOLD} /></View><ScrollView contentContainerStyle={{paddingBottom:20}} showsVerticalScrollIndicator={false}>{screen === 'home' ? <><View style={styles.scoreCard}><Text style={styles.muted}>TOTAL SCORE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)} estimated value</Text><Text style={styles.muted}>{50 - (tapCount % 50)} taps to +200 bonus</Text></View><TouchableOpacity activeOpacity={0.8} onPress={handleTap}><Animated.View style={[styles.tapCircle,{transform:[{scale:pulse}]}]}><Text style={styles.tapSmall}>VYRA</Text><Text style={styles.tapTitle}>TAP TO</Text><Text style={styles.tapTitle}>EARN</Text><Text style={styles.tapSmall}>+1 COIN</Text></Animated.View></TouchableOpacity><TouchableOpacity onPress={handleTap} style={styles.tapHit}><Text style={styles.muted}>Tap the glowing circle to earn a coin</Text></TouchableOpacity><View style={styles.threeCards}><Action title="2X SPEED" subtitle={`${50 - (tapCount % 50)} to bonus`} onPress={() => Alert.alert('Bonus', `${50 - (tapCount % 50)} taps to +200`)} color={GOLD}/><Action title="WALLET" subtitle="Your balance" onPress={() => setScreen('wallet')}/><Action title="TASKS" subtitle="7+Survey+Quiz" onPress={() => setScreen('shop')} color={GOLD}/></View><TouchableOpacity onPress={watchAd} style={[styles.watch,{backgroundColor:GREEN}]}><Text style={styles.watchTitle}>▶ WATCH AD +50 COINS</Text><Text style={styles.watchSub}>Monetag - {MONETAG_DIRECT_LINK}</Text></TouchableOpacity><View style={styles.row}><Action title="DAILY CHECK-IN" subtitle={`+${streakRewards[lastCheckin === todayKey() ? Math.max(0,streak-1) : streak % 7]} coins`} onPress={checkin} disabled={lastCheckin === todayKey()}/><Action title="SCRATCH CARD" subtitle={`${scratchCount}/3 used`} onPress={scratch} color={GOLD}/></View><TouchableOpacity onPress={spin} style={styles.spin}><Text style={styles.actionTitle}>🎡 SPIN & WIN</Text><Text style={styles.muted}>1 free spin daily • Win 10–100 coins</Text></TouchableOpacity><TouchableOpacity onPress={invite} style={styles.invite}><Text style={styles.inviteTitle}>✦ INVITE FRIEND +200</Text><Text style={styles.inviteSub}>Your code: {referral}</Text></TouchableOpacity></> : screen === 'wallet' ? <><Text style={styles.pageTitle}>My Wallet</Text><View style={styles.walletCard}><Text style={styles.muted}>AVAILABLE BALANCE</Text><Text style={styles.score}>{coins.toLocaleString()}</Text><Text style={styles.naira}>{money(coins)} Nigerian Naira</Text></View><Text style={styles.sectionTitle}>WITHDRAW</Text><View style={styles.methodRow}>{['Airtime - MTN','Airtime - Airtel','Airtime - Glo','Airtime - 9Mobile','OPay','PalmPay','Bank Transfer'].map(m=><TouchableOpacity key={m} onPress={()=>setMethod(m)} style={[styles.method,{borderColor:method===m?GREEN:BORDER,backgroundColor:method===m?'#12362B':CARD}]}><Text style={{color:TEXT,fontSize:12}}>{m}</Text></TouchableOpacity>)}</View><Text style={styles.label}>Amount (coins)</Text><TextInput value={amount} onChangeText={setAmount} keyboardType="number-pad" style={styles.input} placeholder="1000" placeholderTextColor="#777"/>{method.startsWith('Airtime') ? <><Text style={styles.label}>Phone number</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.input} placeholder="08012345678" placeholderTextColor="#777"/></> : <><Text style={styles.label}>Bank name</Text><TextInput value={bank} onChangeText={setBank} style={styles.input} placeholder="Bank name" placeholderTextColor="#777"/><Text style={styles.label}>Account number</Text><TextInput value={account} onChangeText={setAccount} keyboardType="number-pad" style={styles.input} placeholder="Account number" placeholderTextColor="#777"/></>}<Text style={[styles.muted,{marginHorizontal:16,marginTop:8}]}>Ads watched: {adsWatched}/5 required</Text><TouchableOpacity onPress={submitWithdrawal} disabled={coins<1000} style={[styles.primaryButton,{opacity:coins<1000?0.45:1}]}><Text style={styles.primaryText}>{adsWatched<5 ? `WATCH ${5-adsWatched} MORE ADS` : 'REQUEST WITHDRAWAL'}</Text></TouchableOpacity></> : <><Text style={styles.pageTitle}>Tasks, Survey & Quiz</Text><Text style={styles.sectionTitle}>YOUR 7 REFERRAL LINKS</Text>{TASKS_10.map(item=><View key={item.id} style={styles.shopItem}><View style={{flex:1}}><Text style={styles.leaderName}>{item.id}. {item.name}</Text><Text style={styles.muted}>+{item.bonus} coins {item.code ? `Code: ${item.code}` : ''}</Text></View><TouchableOpacity onPress={()=>openTask(item)} style={{backgroundColor:item.color, paddingHorizontal:14, paddingVertical:8, borderRadius:8, marginLeft:8}}><Text style={{color:'#fff',fontWeight:'800', fontSize:12}}>OPEN</Text></TouchableOpacity></View>)}<Text style={[styles.sectionTitle,{marginTop:20}]}>📝 SURVEY</Text>{SURVEYS.map(s=><View key={s.id} style={styles.shopItem}><View style={{flex:1}}><Text style={styles.leaderName}>{s.q}</Text><Text style={styles.muted}>+{s.reward} +15 bonus</Text></View><TouchableOpacity onPress={()=>doSurvey(s)} disabled={surveyDone.includes(String(s.id))} style={{backgroundColor: surveyDone.includes(String(s.id)) ? '#555' : GREEN, paddingHorizontal:14, paddingVertical:8, borderRadius:8, marginLeft:8}}><Text style={{color: surveyDone.includes(String(s.id)) ? '#999' : '#000', fontWeight:'800', fontSize:12}}>{surveyDone.includes(String(s.id)) ? 'DONE' : 'ANSWER'}</Text></TouchableOpacity></View>)}<Text style={[styles.sectionTitle,{marginTop:20}]}>🧠 QUIZ</Text>{QUIZZES.map(q=><View key={q.id} style={styles.shopItem}><View style={{flex:1}}><Text style={styles.leaderName}>{q.q}</Text><Text style={styles.muted}>+{q.reward} +20 bonus</Text></View><TouchableOpacity onPress={()=>doQuiz(q)} disabled={quizDone.includes(String(q.id))} style={{backgroundColor: quizDone.includes(String(q.id)) ? '#555' : GOLD, paddingHorizontal:14, paddingVertical:8, borderRadius:8, marginLeft:8}}><Text style={{color: quizDone.includes(String(q.id)) ? '#999' : '#000', fontWeight:'800', fontSize:12}}>{quizDone.includes(String(q.id)) ? 'DONE' : 'PLAY'}</Text></TouchableOpacity></View>)}</>}</ScrollView><View style={styles.bottomNav}><TouchableOpacity onPress={()=>setScreen('home')}><Text style={[styles.navText,screen==='home'&&{color:GREEN}]}>⌂ Home</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('wallet')}><Text style={[styles.navText,screen==='wallet'&&{color:GREEN}]}>◉ Wallet</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('shop')}><Text style={[styles.navText,screen==='shop'&&{color:GREEN}]}>◇ Tasks+Survey+Quiz</Text></TouchableOpacity></View></View>
+    <View style={styles.statCard}>
+      <Text style={styles.statTitle}>{title}</Text>
+
+      <Text style={[styles.statValue, { color: accent }]}>
+        {value}
+      </Text>
+
+      {subtitle ? (
+        <Text style={styles.statSubtitle}>{subtitle}</Text>
+      ) : null}
+    </View>
   );
 }
-const BG='#0A0A14', CARD='#1E1E2E', GREEN='#00FF88', GOLD='#FFD700', TEXT='#F5F5FA', MUTED='#9B9BAF', BORDER='#343449';
-const styles=StyleSheet.create({
-  root:{flex:1,backgroundColor:BG,paddingTop:8}, header:{paddingHorizontal:18,paddingVertical:12,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}, brand:{color:TEXT,fontSize:20,fontWeight:'900',letterSpacing:1}, muted:{color:MUTED,fontSize:12}, avatar:{width:38,height:38,borderRadius:19,backgroundColor:CARD,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:GOLD}, pills:{flexDirection:'row',gap:7,paddingHorizontal:14,marginBottom:8}, pill:{flex:1,backgroundColor:CARD,borderRadius:12,padding:10}, pillValue:{fontSize:13,fontWeight:'900',marginTop:4}, scoreCard:{alignItems:'center',padding:12,marginHorizontal:16,backgroundColor:CARD,borderRadius:18}, score:{fontSize:34,fontWeight:'900',color:TEXT,marginVertical:3}, naira:{color:GREEN,fontSize:13,fontWeight:'700'}, tapCircle:{alignSelf:'center',marginTop:20,width:190,height:190,borderRadius:95,borderWidth:3,borderColor:GREEN,backgroundColor:'#10271F',alignItems:'center',justifyContent:'center',shadowColor:GREEN,shadowOpacity:0.65,shadowRadius:22,elevation:12}, tapSmall:{color:GREEN,fontSize:12,fontWeight:'900',letterSpacing:3}, tapTitle:{color:TEXT,fontSize:25,fontWeight:'900',letterSpacing:1}, tapHit:{alignItems:'center',paddingVertical:10}, threeCards:{flexDirection:'row',gap:8,paddingHorizontal:14,marginTop:4}, action:{flex:1,minHeight:66,backgroundColor:CARD,borderRadius:13,borderWidth:1,padding:10,alignItems:'center',justifyContent:'center',marginBottom:8}, actionTitle:{fontWeight:'900',fontSize:12,textAlign:'center'}, watch:{marginHorizontal:14,marginTop:6,borderRadius:15,padding:17,alignItems:'center'}, watchTitle:{color:BG,fontWeight:'900',fontSize:16}, watchSub:{color:'#163D2D',fontSize:11,marginTop:4}, row:{flexDirection:'row',gap:8,paddingHorizontal:14,marginTop:10}, spin:{marginHorizontal:14,marginTop:4,backgroundColor:CARD,borderRadius:14,borderWidth:1,borderColor:'#755F15',padding:14,alignItems:'center'}, invite:{margin:14,backgroundColor:'#332A08',borderColor:GOLD,borderWidth:1,borderRadius:15,padding:16,alignItems:'center'}, inviteTitle:{color:GOLD,fontSize:16,fontWeight:'900'}, inviteSub:{color:'#E5D88D',fontSize:12,marginTop:5}, sectionTitle:{color:TEXT,fontWeight:'900',fontSize:13,marginHorizontal:16,marginTop:14,marginBottom:8}, shopItem:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginHorizontal:14,marginTop:8,padding:14,backgroundColor:CARD,borderRadius:12}, leaderName:{color:TEXT,fontSize:13,fontWeight:'700',flex:1}, bottomNav:{flexDirection:'row',justifyContent:'space-around',paddingVertical:10,borderTopWidth:1,borderColor:BORDER}, navText:{color:MUTED,fontSize:13,fontWeight:'700'}, pageTitle:{fontSize:25,fontWeight:'900',color:TEXT,margin:16}, walletCard:{backgroundColor:CARD,borderRadius:16,marginHorizontal:14,padding:18,alignItems:'center'}, label:{color:MUTED,fontSize:12,marginHorizontal:16,marginTop:12,marginBottom:5}, methodRow:{flexDirection:'row',flexWrap:'wrap',gap:7,margi
+
+type SectionHeaderProps = {
+  title: string;
+  subtitle?: string;
+};
+
+function SectionHeader({ title, subtitle }: SectionHeaderProps) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+
+      {subtitle ? (
+        <Text style={styles.sectionSubtitle}>{subtitle}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+/*
+ * ============================================================
+ * MAIN APP
+ * ============================================================
+ */
+
+export default function App() {
+  const [points, setPoints] = useState<number>(0);
+  const [taps, setTaps] = useState<number>(0);
+  const [tab, setTab] = useState<'home' | 'wallet'>('home');
+
+  const [email, setEmail] = useState<string>('');
+  const [withdrawMethod, setWithdrawMethod] =
+    useState<string>('OPay');
+
+  const [completed, setCompleted] = useState<number[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const [lastEarned, setLastEarned] = useState<number>(0);
+  const [showTaskInfo, setShowTaskInfo] = useState<number | null>(null);
+
+  /*
+   * ----------------------------------------------------------
+   * LOAD SAVED DATA
+   * ----------------------------------------------------------
+   */
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadData = async () => {
+      try {
+        const [
+          savedPoints,
+          savedTaps,
+          savedCompleted,
+          savedEmail,
+          savedMethod,
+        ] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_POINTS),
+          AsyncStorage.getItem(STORAGE_TAPS),
+          AsyncStorage.getItem(STORAGE_COMPLETED),
+          AsyncStorage.getItem(STORAGE_EMAIL),
+          AsyncStorage.getItem(STORAGE_METHOD),
+        ]);
+
+        if (!mounted) {
+          return;
+        }
+
+        if (savedPoints !== null) {
+          const parsedPoints = parseInt(savedPoints, 10);
+
+          if (!Number.isNaN(parsedPoints)) {
+            setPoints(parsedPoints);
+          }
+        }
+
+        if (savedTaps !== null) {
+          const parsedTaps = parseInt(savedTaps, 10);
+
+          if (!Number.isNaN(parsedTaps)) {
+            setTaps(parsedTaps);
+          }
+        }
+
+        if (savedCompleted !== null) {
+          try {
+            const parsedCompleted = JSON.parse(savedCompleted);
+
+            if (Array.isArray(parsedCompleted)) {
+              setCompleted(parsedCompleted);
+            }
+          } catch {
+            setCompleted([]);
+          }
+        }
+
+        if (savedEmail !== null) {
+          setEmail(savedEmail);
+        }
+
+        if (savedMethod !== null) {
+          setWithdrawMethod(savedMethod);
+        }
+      } catch (error) {
+        console.log('Vyra load error:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /*
+   * ----------------------------------------------------------
+   * SAVE POINTS
+   * ----------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    AsyncStorage.setItem(
+      STORAGE_POINTS,
+      String(points),
+    ).catch(error => {
+      console.log('Points save error:', error);
+    });
+  }, [points, loading]);
+
+  /*
+   * ----------------------------------------------------------
+   * SAVE TAPS
+   * ----------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    AsyncStorage.setItem(
+      STORAGE_TAPS,
+      String(taps),
+    ).catch(error => {
+      console.log('Taps save error:', error);
+    });
+  }, [taps, loading]);
+
+  /*
+   * ----------------------------------------------------------
+   * SAVE COMPLETED TASKS
+   * ----------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    AsyncStorage.setItem(
+      STORAGE_COMPLETED,
+      JSON.stringify(completed),
+    ).catch(error => {
+      console.log('Completed save error:', error);
+    });
+  }, [completed, loading]);
+
+  /*
+   * ----------------------------------------------------------
+   * SAVE ACCOUNT DETAILS
+   * ----------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    AsyncStorage.setItem(
+      STORAGE_EMAIL,
+      email,
+    ).catch(error => {
+      console.log('Email save error:', error);
+    });
+  }, [email, loading]);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    AsyncStorage.setItem(
+      STORAGE_METHOD,
+      withdrawMethod,
+    ).catch(error => {
+      console.log('Method save error:', error);
+    });
+  }, [withdrawMethod, loading]);
+
+  /*
+   * ----------------------------------------------------------
+   * FIRST LAUNCH
+   * ----------------------------------------------------------
+   */
+
+  useEffect(() => {
+    const checkFirstLaunch = async () => {
+      try {
+        const firstLaunch = await AsyncStorage.getItem(
+          STORAGE_FIRST_LAUNCH,
+        );
+
+        if (!firstLaunch) {
+          await AsyncStorage.setItem(
+            STORAGE_FIRST_LAUNCH,
+            'true',
+          );
+        }
+      } catch (error) {
+        console.log('First launch error:', error);
+      }
+    };
+
+    checkFirstLaunch();
+  }, []);
+
+  /*
+   * ----------------------------------------------------------
+   * POINT CALCULATIONS
+   * ----------------------------------------------------------
+   */
+
+  const completedCount = completed.length;
+
+  const taskPoints = useMemo(() => {
+    return TASKS_10.reduce((total, task) => {
+      if (completed.includes(task.id)) {
+        return total + task.bonus;
+      }
+
+      return total;
+    }, 0);
+  }, [completed]);
+
+  const progressPercent = useMemo(() => {
+    if (TASKS_10.length === 0) {
+      return 0;
+    }
+
+    return Math.round(
+      (completedCount / TASKS_10.length) * 100,
+    );
+  }, [completedCount]);
+
+  /*
+   * ----------------------------------------------------------
+   * ADD POINTS
+   * ----------------------------------------------------------
+   */
+
+  const addPoints = (amount: number) => {
+    if (amount <= 0) {
+      return;
+    }
+
+    setPoints(previous => previous + amount);
+    setLastEarned(amount);
+  };
+
+  /*
+   * ----------------------------------------------------------
+   * TAP TO EARN
+   * ----------------------------------------------------------
+   */
+
+  const handleTap = () => {
+    const newTapCount = taps + 1;
+
+    setTaps(newTapCount);
+    addPoints(POINTS_PER_TAP);
+
+    /*
+     * Open the Monetag direct link after every 10 taps.
+     */
+    if (newTapCount % 10 === 0) {
+      Linking.openURL(MONETAG_DIRECT_LINK).catch(() => {
+        Alert.alert(
+          'Ad Link',
+          'Ba a iya bude ad link a wannan lokacin ba.',
+        );
+      });
+    }
+  };
+
+  /*
+   * ----------------------------------------------------------
+   * WATCH AD
+   * ----------------------------------------------------------
+   */
+
+  const handleWatchAd = async () => {
+    try {
+      await Linking.openURL(MONETAG_DIRECT_LINK);
+      addPoints(WATCH_AD_POINTS);
+
+      Alert.alert(
+        'Bonus!',
+        `Ka samu +${WATCH_AD_POINTS} points.`,
+      );
+    } catch {
+      Alert.alert(
+        'Ad Link',
+        'Ba a iya bude ad link ba.',
+      );
+    }
+  };
+
+  /*
+   * ----------------------------------------------------------
+   * TASK HANDLER
+   * ----------------------------------------------------------
+   */
+
+  const handleTask = async (task: Task) => {
+    if (completed.includes(task.id)) {
+      Alert.alert(
+        'An riga an kammala',
+        `${task.name} yana cikin completed tasks.`,
+      );
+
+      return;
+    }
+
+    try {
+      await Linking.openURL(task.link);
+
+      addPoints(task.bonus);
+
+      setCompleted(previous => {
+        if (previous.includes(task.id)) {
+          return previous;
+        }
+
+        return [...previous, task.id];
+      });
+
+      Alert.alert(
+        'Bonus!',
+        `Ka samu +${task.bonus} points daga ${task.name}.`,
+      );
+    } catch {
+      Alert.alert(
+        'Error',
+        'Ba a iya bude wannan link din ba.',
+      );
+    }
+  };
+
+  /*
+   * ----------------------------------------------------------
+   * SHARE APP
+   * ----------------------------------------------------------
+   */
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message:
+          'Ka sauke Vyra Rewards ka samu rewards! Use code VYRA2026',
+      });
+    } catch (error) {
+      console.log('Share error:', error);
+    }
+  };
+
+  /*
+   * ----------------------------------------------------------
+   * WITHDRAW
+   * ----------------------------------------------------------
+   */
+
+  const handleWithdraw = () => {
+    const cleanAccount = email.trim();
+
+    if (points < MIN_WITHDRAW_POINTS) {
+      Alert.alert(
+        'Rashin Points',
+        `Kana bukatar ${MIN_WITHDRAW_POINTS} points kafin withdraw.`,
+      );
+
+      return;
+    }
+
+    if (!cleanAccount) {
+      Alert.alert(
+        'Shigar da Account',
+        'Da fatan shigar da account number ko email.',
+      );
+
+      return;
+    }
+
+    Alert.alert(
+      'Withdraw Request',
+      `An karbi bukatarka!\n\nPoints: ${points}\nMethod: ${withdrawMethod}\nAccount: ${cleanAccount}\n\nZa a duba request din kafin biyan kudi.`,
+      [
+        {
+          text: 'OK',
+          style: 'default',
+        },
+      ],
+    );
+  };
+
+  /*
+   * ----------------------------------------------------------
+   * RESET LOCAL DATA
+   * ----------------------------------------------------------
+   */
+
+  const handleReset = () => {
+    Alert.alert(
+      'Reset App',
+      'Kana son goge points da tasks da aka ajiye a wannan wayar?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove([
+                STORAGE_POINTS,
+                STORAGE_TAPS,
+                STORAGE_COMPLETED,
+                STORAGE_EMAIL,
+                STORAGE_METHOD,
+              ]);
+
+              setPoints(0);
+              setTaps(0);
+              setCompleted([]);
+              setEmail('');
+              setWithdrawMethod('OPay');
+              setLastEarned(0);
+
+              Alert.alert(
+                'Done',
+                'An reset din Vyra Rewards.',
+              );
+            } catch {
+              Alert.alert(
+                'Error',
+                'An samu matsala wajen reset.',
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  /*
+   * ----------------------------------------------------------
+   * INFO
+   * ----------------------------------------------------------
+   */
+
+  const handleInfo = () => {
+    Alert.alert(
+      APP_NAME,
+      `Version ${APP_VERSION}\n\nTap to earn points, complete offers and build your balance.\n\n1000 PTS = ₦100\nMinimum withdrawal = 5000 PTS`,
+      [
+        {
+          text: 'Close',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset Data',
+          style: 'destructive',
+          onPress: handleReset,
+        },
+      ],
+    );
+  };
+
+  /*
+   * ----------------------------------------------------------
+   * LOADING SCREEN
+   * ----------------------------------------------------------
+   */
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={BG}
+        />
+
+        <Text style={styles.loadingLogo}>
+          VYRA
+        </Text>
+
+        <Text style={styles.loadingTitle}>
+          REWARDS
+        </Text>
+
+        <Text style={styles.loadingText}>
+          Loading...
+        </Text>
+      </View>
+    );
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * MAIN SCREEN
+   * ----------------------------------------------------------
+   */
+
+  return (
+    <View style={styles.container}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={BG}
+      />
+
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.logo}>
+            VYRA REWARDS
+          </Text>
+
+          <Text style={styles.headerSubtitle}>
+            Earn • Complete • Withdraw
+          </Text>
+        </View>
+
+        <View style={styles.pointsBadge}>
+          <Text style={styles.pointsText}>
+            {points.toLocaleString()} PTS
+          </Text>
+        </View>
+      </View>
+
+      {/* HOME */}
+      {tab === 'home' && (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* BALANCE HERO */}
+          <View style={styles.balanceHero}>
+            <Text style={styles.balanceLabel}>
+              CURRENT BALANCE
+            </Text>
+
+            <Text style={styles.balanceAmount}>
+              {points.toLocaleString()}
+            </Text>
+
+            <Text style={styles.balancePoints}>
+              POINTS
+            </Text>
+
+            <View style={styles.balanceDivider} />
+
+            <Text style={styles.balanceNaira}>
+              ≈ ₦{Math.floor(points / 10).toLocaleString()}
+            </Text>
+
+            <Text style={styles.balanceRate}>
+              1000 PTS = ₦100
+            </Text>
+          </View>
+
+          {/* TAP SECTION */}
+          <View style={styles.tapSection}>
+            <Text style={styles.tapHeading}>
+              TAP & EARN
+            </Text>
+
+            <Text style={styles.tapDescription}>
+              Tap the button to earn {POINTS_PER_TAP} points
+            </Text>
+
+            <TouchableOpacity
+              style={styles.tapCircle}
+              onPress={handleTap}
+              activeOpacity={0.78}
+            >
+              <View style={styles.tapCircleInner}>
+                <Text style={styles.tapSmall}>
+                  TAP TO
+                </Text>
+
+                <Text style={styles.tapTitle}>
+                  EARN
+                </Text>
+
+                <Text style={styles.tapSub}>
+                  +{POINTS_PER_TAP} PTS
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <Text style={styles.tapCounter}>
+              {taps.toLocaleString()} taps
+            </Text>
+
+            {lastEarned > 0 ? (
+              <View style={styles.earnedPill}>
+                <Text style={styles.earnedPillText}>
+                  +{lastEarned} PTS EARNED
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* STAT CARDS */}
+          <View style={styles.statsRow}>
+            <StatCard
+              title="BALANCE"
+              value={points.toLocaleString()}
+              subtitle="Points"
+              accent={GOLD}
+            />
+
+            <StatCard
+              title="TASKS"
+              value={`${completedCount}/10`}
+              subtitle={`${progressPercent}% complete`}
+              accent={GREEN}
+            />
+
+            <StatCard
+              title="TAPS"
+              value={taps.toLocaleString()}
+              subtitle="Total taps"
+              accent={BLUE}
+            />
+          </View>
+
+          {/* WATCH AD */}
+          <TouchableOpacity
+            style={styles.watc
