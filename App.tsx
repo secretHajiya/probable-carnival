@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, StyleSheet, Share } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Linking, Alert, StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 const MONETAG_DIRECT_LINK = 'https://uplcm.com/4/11966517';
 
@@ -26,57 +27,154 @@ const QUIZ_DATA = [
 export default function App() {
   const [screen, setScreen] = useState('home');
   const [coins, setCoins] = useState(0);
-  const [claimed, setClaimed] = useState([]);
+  const [claimed, setClaimed] = useState<number[]>([]);
   const [tapCount, setTapCount] = useState(0);
   const [quizIndex, setQuizIndex] = useState(0);
-  const openMonetag = () => { Linking.openURL(MONETAG_DIRECT_LINK); };
-    const handleClaim = (app) => {
+
+  const openMonetag = async () => {
+    try {
+      await Linking.openURL(MONETAG_DIRECT_LINK);
+    } catch (e) {
+      console.log("Monetag error", e);
+    }
+  };
+
+  const handleClaim = async (app: any) => {
     if (claimed.includes(app.id)) return;
-    Linking.openURL(app.link);
+    try {
+      await Linking.openURL(app.link);
+    } catch {}
     setCoins(c => c + app.points);
     setClaimed([...claimed, app.id]);
+    const newTap = tapCount + 1;
+    setTapCount(newTap);
+    if (newTap % 2 === 0) {
+      setTimeout(() => openMonetag(), 800);
+    }
+  };
+
+  const handleCheckIn = () => {
+    setCoins(c => c + 200);
     setTapCount(t => t + 1);
-    if ((tapCount + 1) % 2 === 0) setTimeout(() => openMonetag(), 800);
+    Alert.alert("Check-in Success!", "+200 Coins");
+    openMonetag();
   };
-  const handleCheckIn = () => { setCoins(c => c + 200); setTapCount(t => t + 1); Alert.alert("Check-in Success!", "+200 Coins"); openMonetag(); };
-  const handleSpin = () => { const win = Math.floor(Math.random() * 500) + 100; setCoins(c => c + win); Alert.alert("Spin Win!", `You won ${win} coins!`); openMonetag(); };
-  const handleQuiz = (optIndex) => {
-    if (optIndex === QUIZ_DATA[quizIndex].ans) { setCoins(c => c + 150); Alert.alert("Correct!", "+150 Coins"); }
-    else Alert.alert("Wrong!", "Try next");
-    if (quizIndex < QUIZ_DATA.length - 1) setQuizIndex(quizIndex + 1); else { setQuizIndex(0); setScreen('home'); }
+
+  const handleSpin = () => {
+    const win = Math.floor(Math.random() * 500) + 100;
+    setCoins(c => c + win);
+    Alert.alert("Spin Win!", `You won ${win} coins!`);
+    openMonetag();
   };
+
+  const handleQuiz = (optIndex: number) => {
+    if (optIndex === QUIZ_DATA[quizIndex].ans) {
+      setCoins(c => c + 150);
+      Alert.alert("Correct!", "+150 Coins");
+    } else {
+      Alert.alert("Wrong!", "Try next");
+    }
+    if (quizIndex < QUIZ_DATA.length - 1) setQuizIndex(quizIndex + 1);
+    else { setQuizIndex(0); setScreen('home'); }
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}><Text style={styles.headerTitle}>Vyra Rewards</Text><Text style={styles.coinText}>🪙 {coins}</Text></View>
+      <StatusBar style="light" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Vyra Rewards</Text>
+        <Text style={styles.coinText}>🪙 {coins}</Text>
+      </View>
+
       {screen === 'home' && (
-        <ScrollView style={{ flex: 1, padding: 15 }}>
-          <View style={styles.card}><Text style={styles.cardTitle}>Daily Rewards</Text><View style={{ flexDirection: 'row', gap: 10 }}><TouchableOpacity style={styles.btn} onPress={handleCheckIn}><Text style={styles.btnText}>Check-in +200</Text></TouchableOpacity><TouchableOpacity style={[styles.btn, { backgroundColor: '#FF9800' }]} onPress={handleSpin}><Text style={styles.btnText}>Spin</Text></TouchableOpacity></View></View>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 15 }}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Daily Rewards</Text>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity style={[styles.btn, { marginRight: 10 }]} onPress={handleCheckIn}>
+                <Text style={styles.btnText}>Check-in +200</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btn, { backgroundColor: '#FF9800' }]} onPress={handleSpin}>
+                <Text style={styles.btnText}>Spin</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', marginVertical: 15 }}>🔥 Top: OPay N7,200</Text>
-          <TouchableOpacity style={[styles.appCard, { borderColor: '#00C853', borderWidth: 2 }]} onPress={() => handleClaim(REFERRAL_APPS[0])}><Text style={{ color: '#00C853', fontWeight: 'bold' }}>{REFERRAL_APPS[0].name} 🔥</Text><Text style={styles.appDesc}>{REFERRAL_APPS[0].desc}</Text><Text style={styles.codeText}>{REFERRAL_APPS[0].link}</Text><View style={styles.claimBtn}><Text style={styles.btnText}>{claimed.includes(1)? '✅ Claimed' : 'Claim 2500'}</Text></View></TouchableOpacity>
-          <TouchableOpacity style={[styles.btn, { marginTop: 20 }]} onPress={() => setScreen('tasks')}><Text style={styles.btnText}>View All 10 Tasks →</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.btn, { backgroundColor: '#6A1B9A', marginTop: 10 }]} onPress={() => setScreen('quiz')}><Text style={styles.btnText}>🧠 Quiz</Text></TouchableOpacity>
+
+          <TouchableOpacity style={[styles.appCard, { borderColor: '#00C853', borderWidth: 2 }]} onPress={() => handleClaim(REFERRAL_APPS[0])}>
+            <Text style={{ color: '#00C853', fontWeight: 'bold' }}>{REFERRAL_APPS[0].name} 🔥</Text>
+            <Text style={styles.appDesc}>{REFERRAL_APPS[0].desc}</Text>
+            <Text style={styles.codeText}>{REFERRAL_APPS[0].link}</Text>
+            <View style={styles.claimBtn}><Text style={styles.btnText}>{claimed.includes(1)? '✅ Claimed' : 'Claim 2500'}</Text></View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.btn, { marginTop: 20 }]} onPress={() => setScreen('tasks')}>
+            <Text style={styles.btnText}>View All 10 Tasks →</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: '#6A1B9A', marginTop: 10 }]} onPress={() => setScreen('quiz')}>
+            <Text style={styles.btnText}>🧠 Quiz</Text>
+          </TouchableOpacity>
         </ScrollView>
       )}
+
       {screen === 'tasks' && (
-        <ScrollView style={{ flex: 1, padding: 15 }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 15 }}>
           <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>📋 10 Tasks</Text>
           {REFERRAL_APPS.map(app => (
             <View key={app.id} style={[styles.appCard, { borderLeftColor: app.color, borderLeftWidth: 5 }]}>
-              <Text style={[styles.appName, { color: app.color }]}>{app.id}. {app.name}</Text><Text style={styles.appDesc}>{app.desc}</Text><Text style={styles.codeText}>Code: {app.code}</Text><Text style={styles.linkText} numberOfLines={1}>{app.link}</Text>
-              <TouchableOpacity style={[styles.claimBtn, { backgroundColor: claimed.includes(app.id)? 'gray' : app.color }]} onPress={() => handleClaim(app)} disabled={claimed.includes(app.id)}><Text style={styles.btnText}>{claimed.includes(app.id)? '✅ Done' : `Claim +${app.points}`}</Text></TouchableOpacity>
+              <Text style={[styles.appName, { color: app.color }]}>{app.id}. {app.name}</Text>
+              <Text style={styles.appDesc}>{app.desc}</Text>
+              <Text style={styles.codeText}>Code: {app.code}</Text>
+              <Text style={styles.linkText} numberOfLines={1}>{app.link}</Text>
+              <TouchableOpacity style={[styles.claimBtn, { backgroundColor: claimed.includes(app.id)? 'gray' : app.color }]} onPress={() => handleClaim(app)} disabled={claimed.includes(app.id)}>
+                <Text style={styles.btnText}>{claimed.includes(app.id)? '✅ Done' : `Claim +${app.points}`}</Text>
+              </TouchableOpacity>
             </View>
           ))}
         </ScrollView>
-      )}       {screen === 'quiz' && (
-        <View style={{ flex: 1, padding: 20, justifyContent: 'center' }}><Text style={{ color: 'white', fontSize: 18, marginBottom: 20 }}>{QUIZ_DATA[quizIndex].q}</Text>{QUIZ_DATA[quizIndex].options.map((opt, i) => (<TouchableOpacity key={i} style={styles.quizOpt} onPress={() => handleQuiz(i)}><Text style={{ color: 'white' }}>{opt}</Text></TouchableOpacity>))}<Text style={{ color: '#888', marginTop: 20 }}>{quizIndex + 1} / {QUIZ_DATA.length}</Text></View>
       )}
+
+      {screen === 'quiz' && (
+        <View style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
+          <Text style={{ color: 'white', fontSize: 18, marginBottom: 20 }}>{QUIZ_DATA[quizIndex].q}</Text>
+          {QUIZ_DATA[quizIndex].options.map((opt, i) => (
+            <TouchableOpacity key={i} style={styles.quizOpt} onPress={() => handleQuiz(i)}>
+              <Text style={{ color: 'white' }}>{opt}</Text>
+            </TouchableOpacity>
+          ))}
+          <Text style={{ color: '#888', marginTop: 20 }}>{quizIndex + 1} / {QUIZ_DATA.length}</Text>
+        </View>
+      )}
+
       {screen === 'wallet' && (
-        <View style={{ flex: 1, padding: 20 }}><View style={styles.card}><Text style={styles.cardTitle}>Wallet</Text><Text style={{ fontSize: 40, color: '#00C853', fontWeight: 'bold' }}>{coins} 🪙</Text><Text style={{ color: '#aaa' }}>~ N{Math.floor(coins/10)}</Text></View><View style={[styles.card, { marginTop: 15 }]}><Text style={{ color: 'white', fontWeight: 'bold' }}>Withdrawal</Text><Text style={{ color: '#aaa', marginTop: 5 }}>Complete 3 Tasks to withdraw.</Text><Text style={{ color: claimed.length >= 3? '#00C853' : '#FF5252', marginTop: 10 }}>{claimed.length}/3 {claimed.length >= 3? '✅' : '❌'}</Text></View><TouchableOpacity style={[styles.btn, { marginTop: 20, backgroundColor: claimed.length >= 3? '#00C853' : 'gray' }]} disabled={claimed.length < 3} onPress={() => { Alert.alert("Withdraw", "Contact support"); openMonetag(); }}><Text style={styles.btnText}>Withdraw</Text></TouchableOpacity></View>
+        <View style={{ flex: 1, padding: 20 }}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Wallet</Text>
+            <Text style={{ fontSize: 40, color: '#00C853', fontWeight: 'bold' }}>{coins} 🪙</Text>
+            <Text style={{ color: '#aaa' }}>~ N{Math.floor(coins/10)}</Text>
+          </View>
+          <View style={[styles.card, { marginTop: 15 }]}>
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Withdrawal</Text>
+            <Text style={{ color: '#aaa', marginTop: 5 }}>Complete 3 Tasks to withdraw.</Text>
+            <Text style={{ color: claimed.length >= 3? '#00C853' : '#FF5252', marginTop: 10 }}>{claimed.length}/3 {claimed.length >= 3? '✅' : '❌'}</Text>
+          </View>
+          <TouchableOpacity style={[styles.btn, { marginTop: 20, backgroundColor: claimed.length >= 3? '#00C853' : 'gray' }]} disabled={claimed.length < 3} onPress={() => { Alert.alert("Withdraw", "Contact support"); openMonetag(); }}>
+            <Text style={styles.btnText}>Withdraw</Text>
+          </TouchableOpacity>
+        </View>
       )}
-      <View style={styles.bottomNav}><TouchableOpacity onPress={() => setScreen('home')} style={styles.navBtn}><Text style={[styles.navText, screen === 'home' && styles.navActive]}>Home</Text></TouchableOpacity><TouchableOpacity onPress={() => setScreen('tasks')} style={styles.navBtn}><Text style={[styles.navText, screen === 'tasks' && styles.navActive]}>Tasks</Text></TouchableOpacity><TouchableOpacity onPress={() => setScreen('quiz')} style={styles.navBtn}><Text style={[styles.navText, screen === 'quiz' && styles.navActive]}>Quiz</Text></TouchableOpacity><TouchableOpacity onPress={() => setScreen('wallet')} style={styles.navBtn}><Text style={[styles.navText, screen === 'wallet' && styles.navActive]}>Wallet</Text></TouchableOpacity></View>
+
+      <View style={styles.bottomNav}>
+        <TouchableOpacity onPress={() => setScreen('home')} style={styles.navBtn}><Text style={[styles.navText, screen === 'home' && styles.navActive]}>Home</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => setScreen('tasks')} style={styles.navBtn}><Text style={[styles.navText, screen === 'tasks' && styles.navActive]}>Tasks</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => setScreen('quiz')} style={styles.navBtn}><Text style={[styles.navText, screen === 'quiz' && styles.navActive]}>Quiz</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => setScreen('wallet')} style={styles.navBtn}><Text style={[styles.navText, screen === 'wallet' && styles.navActive]}>Wallet</Text></TouchableOpacity>
+      </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f172a', paddingTop: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', padding: 15, backgroundColor: '#1e293b' },
@@ -98,4 +196,3 @@ const styles = StyleSheet.create({
   navText: { color: '#64748b' },
   navActive: { color: '#00C853', fontWeight: 'bold' },
 });
-      
