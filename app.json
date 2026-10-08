@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "android": {
-      "package": "com.vyra.rewards",
+      "package": "com.vyrarewards.earn",
       "versionCode": 3,
       "permissions": [
         "android.permission.INTERNET"
