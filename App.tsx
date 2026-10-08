@@ -1,257 +1,196 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Linking,
-  ScrollView,
-  Share,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, StyleSheet, ActivityIndicator, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 
-const APP_VERSION = '1.0.1';
-const MONETAG_DIRECT_LINK = 'https://uplcm.com/4/11966517';
-const MIN_WITHDRAW = 5000;
+const YANDEX_ID = 'R-M-20198314-1';
+const MONETAG_LINK = 'https://uplcm.com/4/11966517';
+const RATE = 20;
+const MIN_WITHDRAW = 100000;
+const VERSION = '1.0.2'; // KARMIN VERSION - Kamar yadda kake so
+const BUILD = 3;
+const VERSION_CODE = 3;
 
-const TASKS = [
-  { id: 'gtworld', title: 'GTBank - GTWorld', reward: 80, code: '' },
-  { id: 'palmpay', title: 'PalmPay - 5,550 Bonus', reward: 100, code: 'NSFM3287' },
-  { id: 'fairmoney', title: 'FairMoney', reward: 90, code: 'UAPM5BZ' },
-  { id: 'binance', title: 'Binance', reward: 120, code: '1205609224' },
-  { id: 'piggyvest', title: 'PiggyVest - 1,000 Bonus', reward: 80, code: 'secrethajiya004' },
-  { id: 'moniepoint', title: 'Moniepoint', reward: 100, code: 'TLEG561' },
-  { id: 'flutterwave', title: 'Flutterwave Send', reward: 70, code: 'OAIH4CJTJI94' },
-  { id: 'opay', title: 'OPay', reward: 80, code: '' },
-  { id: 'kuda', title: 'Kuda Bank', reward: 80, code: '' },
-  { id: 'carbon', title: 'Carbon', reward: 70, code: '' },
-];
+export default function App(){
+  const [screen, setScreen] = useState('loading');
+  const [user, setUser] = useState({name:'', phone:'', email:''});
+  const [otp, setOtp] = useState('');
+  const [genOtp, setGenOtp] = useState('');
+  const [coins, setCoins] = useState(0);
+  const [tapCount, setTapCount] = useState(0);
+  const [totalTaps, setTotalTaps] = useState(0);
+  const [ads, setAds] = useState(0);
+  const [scratch, setScratch] = useState(0);
+  const [invite] = useState('VYRA-'+Math.floor(1000+Math.random()*9000));
+  const [completedTasks, setCompletedTasks] = useState([]);
+  const [surveyStep, setSurveyStep] = useState(0);
 
-const STORAGE = {
-  points: 'vyra_points',
-  taps: 'vyra_taps',
-  completed: 'vyra_completed',
-  email: 'vyra_email',
-  withdrawMethod: 'vyra_withdraw_method',
-  firstLaunch: 'vyra_first_launch',
-};
+  useEffect(()=>{
+    (async()=>{
+      const n = await NetInfo.fetch();
+      if(!n.isConnected) Alert.alert("Internet Required","Please enable data");
+      const c = await AsyncStorage.getItem('c'); if(c) setCoins(parseInt(c));
+      const t = await AsyncStorage.getItem('t'); if(t) setTapCount(parseInt(t));
+      const tt = await AsyncStorage.getItem('tt'); if(tt) setTotalTaps(parseInt(tt));
+      const a = await AsyncStorage.getItem('a'); if(a) setAds(parseInt(a));
+      const ct = await AsyncStorage.getItem('ct'); if(ct) setCompletedTasks(JSON.parse(ct));
+      setTimeout(()=>setScreen('register'),2000);
+    })();
+  },[]);
 
-function StatCard({ title, value, icon }: { title: string; value: string; icon: string }) {
-  return (
-    <View style={styles.statCard}>
-      <Text style={styles.statIcon}>{icon}</Text>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statTitle}>{title}</Text>
-    </View>
-  );
-}
+  const save = async(k,v)=>{ await AsyncStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v)); };
+  const addCoins = (num)=>{ const nc=coins+num; setCoins(nc); save('c',nc.toString()); };
+  const checkNet = async()=>{ const n=await NetInfo.fetch(); if(!n.isConnected){Alert.alert("Internet Required","Turn on data"); return false;} return true; };
+  const createAcc = async()=>{
+    if(!(await checkNet())) return;
+    if(!user.name||!user.phone||!user.email) return Alert.alert("Error","Fill all fields");
+    const p=Math.floor(1000+Math.random()*9000).toString(); setGenOtp(p); setScreen('verify');
+  };
+  const verify = async()=>{ if(otp!==genOtp) return Alert.alert("Invalid OTP","Your code is: "+genOtp); await AsyncStorage.setItem('user', JSON.stringify(user)); setScreen('home'); };
 
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
-    </View>
-  );
-}
-
-export default function App() {
-  const [loading, setLoading] = useState(true);
-  const [screen, setScreen] = useState<'home' | 'wallet'>('home');
-  const [points, setPoints] = useState(0);
-  const [taps, setTaps] = useState(0);
-  const [completed, setCompleted] = useState<string[]>([]);
-  const [email, setEmail] = useState('');
-  const [withdrawMethod, setWithdrawMethod] = useState('OPay');
-
-  useEffect(() => { loadData(); }, []);
-
-  async function loadData() {
-    try {
-      const savedPoints = await AsyncStorage.getItem(STORAGE.points);
-      const savedTaps = await AsyncStorage.getItem(STORAGE.taps);
-      const savedCompleted = await AsyncStorage.getItem(STORAGE.completed);
-      const savedEmail = await AsyncStorage.getItem(STORAGE.email);
-      const savedMethod = await AsyncStorage.getItem(STORAGE.withdrawMethod);
-      if (savedPoints) setPoints(Number(savedPoints));
-      if (savedTaps) setTaps(Number(savedTaps));
-      if (savedCompleted) setCompleted(JSON.parse(savedCompleted));
-      if (savedEmail) setEmail(savedEmail);
-      if (savedMethod) setWithdrawMethod(savedMethod);
-      await AsyncStorage.setItem(STORAGE.firstLaunch, '1');
-    } catch (error) { console.log('Load error:', error); }
-    finally { setLoading(false); }
-  }
-
-  async function savePoints(value: number) {
-    setPoints(value);
-    await AsyncStorage.setItem(STORAGE.points, String(value));
-  }
-
-  async function saveTaps(value: number) {
-    setTaps(value);
-    await AsyncStorage.setItem(STORAGE.taps, String(value));
-  }
-
-  async function handleTap() {
-    const newTaps = taps + 1;
-    const newPoints = points + 2;
-    await saveTaps(newTaps);
-    await savePoints(newPoints);
-    if (newTaps % 10 === 0) {
-      try { await Linking.openURL(MONETAG_DIRECT_LINK); }
-      catch (error) { console.log('Direct link error:', error); }
+  const onTap = async()=>{
+    if(!(await checkNet())) return;
+    addCoins(1);
+    const nt=tapCount+1; const ntt=totalTaps+1;
+    setTapCount(nt); setTotalTaps(ntt);
+    save('t',nt.toString()); save('tt',ntt.toString());
+    if(ntt % 10 === 0){ Linking.openURL(MONETAG_LINK); }
+    if(nt>=50){
+      setTapCount(0); save('t','0');
+      Alert.alert("Bonus Reward v"+VERSION,"You tapped 50! Watch Ad + Survey for +50 coins",[
+        {text:"Watch Ad +20", onPress:()=>{ addCoins(20); setAds(a=>{const na=a+1; save('a',na.toString()); return na;}); }},
+        {text:"Take Survey +50", onPress:()=> setScreen('survey')},
+        {text:"Skip"}
+      ]);
     }
-  }
+  };
 
-  async function handleWatchAd() {
-    try {
-      await Linking.openURL(MONETAG_DIRECT_LINK);
-      await savePoints(points + 50);
-      Alert.alert('Reward Added', '50 Coins have been added to your balance.');
-    } catch (error) {
-      Alert.alert('Unable to Open', 'The reward link could not be opened.');
-    }
-  }
-
-  async function handleTask(task: (typeof TASKS)[number]) {
-    if (completed.includes(task.id)) {
-      Alert.alert('Already Completed', 'You have already completed this task.');
-      return;
-    }
-    const newCompleted = [...completed, task.id];
-    setCompleted(newCompleted);
-    await AsyncStorage.setItem(STORAGE.completed, JSON.stringify(newCompleted));
-    await savePoints(points + task.reward);
-    if (task.code) {
-      Alert.alert(task.title, `Reward: ${task.reward} Coins\n\nReferral/Promo Code: ${task.code}`);
-    } else {
-      Alert.alert(task.title, `${task.reward} Coins have been added.`);
-    }
-  }
-
-  async function handleShare() {
-    try { await Share.share({ message: 'Join Vyra Rewards and earn Coins by completing simple tasks!' }); }
-    catch (error) { console.log('Share error:', error); }
-  }
-
-  async function handleWithdraw() {
-    if (points < MIN_WITHDRAW) {
-      Alert.alert('Not Enough Coins', `You need at least ${MIN_WITHDRAW.toLocaleString()} Coins before requesting a withdrawal.`);
-      return;
-    }
-    if (!email.trim()) {
-      Alert.alert('Account Required', 'Please enter your account number, phone number or email.');
-      return;
-    }
-    await AsyncStorage.setItem(STORAGE.email, email.trim());
-    await AsyncStorage.setItem(STORAGE.withdrawMethod, withdrawMethod);
-    Alert.alert('Withdrawal Request', `Your ${withdrawMethod} withdrawal request has been recorded for testing.\n\nAccount: ${email.trim()}`);
-  }
-
-  async function resetApp() {
-    Alert.alert('Reset Test App', 'This will delete your saved Coins, tasks and account information.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: async () => {
-        await AsyncStorage.multiRemove([STORAGE.points, STORAGE.taps, STORAGE.completed, STORAGE.email, STORAGE.withdrawMethod]);
-        setPoints(0); setTaps(0); setCompleted([]); setEmail(''); setWithdrawMethod('OPay'); setScreen('home');
-      } },
+  const watchAd = async()=>{
+    if(!(await checkNet())) return;
+    Linking.openURL(MONETAG_LINK);
+    Alert.alert("Rewarded Ad v"+VERSION,"Yandex: "+YANDEX_ID+" + Monetag +50",[
+      {text:"Claim", onPress:()=>{ addCoins(50); const na=ads+1; setAds(na); save('a',na.toString()); }}
     ]);
-  }
+  };
 
-  function showAbout() {
-    Alert.alert('Vyra Rewards', `Test Rewards App\n\nVersion ${APP_VERSION}\n\nThis is a testing version of Vyra Rewards.`);
-  }
+  const completeTask = (id, reward)=>{
+    if(completedTasks.includes(id)) return Alert.alert("Done","Task already completed");
+    addCoins(reward);
+    const newList=[...completedTasks,id]; setCompletedTasks(newList); save('ct',newList);
+    Linking.openURL(MONETAG_LINK);
+    Alert.alert("Task Completed v"+VERSION,`+${reward} coins added!`);
+  };
 
-  const completedCount = completed.length;
-  const taskCoins = useMemo(() => TASKS.reduce((total, task) => completed.includes(task.id) ? total + task.reward : total, 0), [completed]);
+  const ngn = (coins/RATE).toFixed(2);
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <StatusBar barStyle="light-content" />
-        <Text style={styles.logoText}>VYRA</Text>
-        <Text style={styles.loadingText}>Rewards</Text>
+  // Version Component - zai bayyana ko'ina
+  const VersionTag = ()=> (
+    <View style={s.verBox}>
+      <Text style={s.verText}>Vyra APK Fast Build - v{VERSION} (Build #{BUILD}) - VC #{VERSION_CODE}</Text>
+      <Text style={s.verSub}>Yandex: {YANDEX_ID} | Monetag 11966517 | MIN {MIN_WITHDRAW}</Text>
+    </View>
+  );
+
+  if(screen==='loading') return <View style={s.load}><Text style={{fontSize:50}}>👑</Text><Text style={s.logo}>VYRA <Text style={{color:'#facc15'}}>REWARDS</Text></Text><ActivityIndicator color="#facc15" style={{marginTop:16}}/><VersionTag/></View>;
+  if(screen==='register') return (
+    <View style={s.cont}><Text style={s.logo}>VYRA <Text style={{color:'#facc15'}}>REWARDS</Text></Text><Text style={s.sub}>Premium Earn - OTP - v{VERSION}</Text>
+      <View style={s.card}><Text style={s.lab}>Full Name *</Text><TextInput style={s.inp} placeholder="John Doe" placeholderTextColor="#64748b" onChangeText={v=>setUser({...user,name:v})}/><Text style={s.lab}>Phone *</Text><TextInput style={s.inp} placeholder="080..." keyboardType="phone-pad" placeholderTextColor="#64748b" onChangeText={v=>setUser({...user,phone:v})}/><Text style={s.lab}>Email *</Text><TextInput style={s.inp} placeholder="email@gmail.com" placeholderTextColor="#64748b" onChangeText={v=>setUser({...user,email:v})}/><TouchableOpacity style={s.yBtn} onPress={createAcc}><Text style={s.yTxt}>CREATE ACCOUNT & SEND OTP</Text></TouchableOpacity><VersionTag/></View>
+    </View>
+  );
+  if(screen==='verify') return (
+    <View style={s.cont}><Text style={s.logo}>VERIFY OTP v{VERSION}</Text><View style={s.card}><Text style={{color:'#facc15', textAlign:'center', fontWeight:'900', fontSize:18}}>YOUR OTP CODE IS: {genOtp}</Text><TextInput style={[s.inp,{textAlign:'center', fontSize:20, marginTop:16}]} maxLength={4} keyboardType="number-pad" placeholder="Enter OTP" placeholderTextColor="#64748b" onChangeText={setOtp}/><TouchableOpacity style={s.yBtn} onPress={verify}><Text style={s.yTxt}>VERIFY & CONTINUE</Text></TouchableOpacity><VersionTag/></View></View>
+  );
+  if(screen==='survey') return (
+    <View style={s.cont}>
+      <Text style={s.logo}>SURVEY & EARN v{VERSION}</Text>
+      <View style={s.card}>
+        <Text style={{color:'#facc15', fontWeight:'900', fontSize:16}}>Survey {surveyStep+1}/3 - +50 Coins Each</Text>
+        {surveyStep===0 && <><Text style={{color:'#fff', marginTop:12}}>1. How often do you use banking apps?</Text><TouchableOpacity style={s.yBtn} onPress={()=>{addCoins(50); setSurveyStep(1);}}><Text style={s.yTxt}>Daily</Text></TouchableOpacity><TouchableOpacity style={[s.yBtn,{backgroundColor:'#132a4f', borderWidth:1, borderColor:'#facc15'}]} onPress={()=>{addCoins(50); setSurveyStep(1);}}><Text style={{color:'#facc15', fontWeight:'900'}}>Weekly</Text></TouchableOpacity></>}
+        {surveyStep===1 && <><Text style={{color:'#fff', marginTop:12}}>2. Which wallet do you prefer?</Text><TouchableOpacity style={s.yBtn} onPress={()=>{addCoins(50); setSurveyStep(2);}}><Text style={s.yTxt}>OPay</Text></TouchableOpacity><TouchableOpacity style={[s.yBtn,{backgroundColor:'#132a4f', borderWidth:1, borderColor:'#facc15'}]} onPress={()=>{addCoins(50); setSurveyStep(2);}}><Text style={{color:'#facc15', fontWeight:'900'}}>PalmPay</Text></TouchableOpacity></>}
+        {surveyStep===2 && <><Text style={{color:'#fff', marginTop:12}}>3. Rate VYRA REWARDS v{VERSION}</Text><TouchableOpacity style={s.yBtn} onPress={()=>{addCoins(50); setSurveyStep(0); setScreen('home'); Linking.openURL(MONETAG_LINK); Alert.alert("Survey Done v"+VERSION,"+150 coins total!");}}><Text style={s.yTxt}>5 Stars ⭐⭐⭐⭐⭐</Text></TouchableOpacity></>}
+        <TouchableOpacity style={s.gb} onPress={()=>setScreen('home')}><Text style={s.gbt}>BACK TO HOME</Text></TouchableOpacity><VersionTag/>
       </View>
+    </View>
+  );
+
+  const Head = ()=> <View style={s.head}><View><Text style={s.logoSm}>👑 VYRA <Text style={{color:'#facc15'}}>REWARDS</Text> v{VERSION}</Text><Text style={{color:'#94a3b8', fontSize:11}}>{user.phone} - 20 coins = NGN 1 - Build #{BUILD}</Text></View><TouchableOpacity style={s.out}><Text style={{fontWeight:'900'}}>OUT</Text></TouchableOpacity></View>;
+
+  if(screen==='home'||screen==='tasks'||screen==='wallet'||screen==='shop'){
+    return (
+      <ScrollView style={s.main}>
+        <Head/>
+        <View style={s.r3}><View style={s.mc}><Text style={s.ml}>WALLET</Text><Text style={s.mv}>{coins}</Text></View><View style={s.mc}><Text style={s.ml}>MIN</Text><Text style={s.mv}>NGN 5K</Text></View><View style={s.mc}><Text style={s.ml}>VER</Text><Text style={s.mv}>{VERSION}</Text></View></View>
+
+        {screen==='home' && <>
+          <View style={s.tot}><Text style={s.ml}>TOTAL SCORE v{VERSION}</Text><Text style={{color:'#facc15', fontSize:36, fontWeight:'900'}}>{coins}</Text><Text style={{color:'#94a3b8'}}>NGN {ngn} - Need {MIN_WITHDRAW-coins>0?MIN_WITHDRAW-coins:0} for 5K</Text></View>
+          <View style={s.prog}><Text style={{color:'#facc15', fontWeight:'900', textAlign:'center'}}>{tapCount}/50 taps to BONUS AD + SURVEY ✨</Text><View style={s.pb}><View style={[s.pf,{width:`${(tapCount/50)*100}%`}]}/></View><Text style={{color:'#64748b', fontSize:10, textAlign:'center', marginTop:4}}>Every 10 taps = Monetag - Every 50 taps = Yandex {YANDEX_ID} + Survey - v{VERSION}</Text></View>
+          <TouchableOpacity style={s.tap} onPress={onTap}><Text style={{fontWeight:'900'}}>VYRA</Text><Text style={{fontWeight:'900', fontSize:20}}>TAP TO{'\n'}EARN</Text><Text style={{fontWeight:'900'}}>+1 COIN</Text></TouchableOpacity>
+          <View style={s.r3}><TouchableOpacity style={s.ab} onPress={()=>{addCoins(50); Alert.alert("+50 v"+VERSION,"Daily Bonus")}}><Text style={s.abt}>DAILY BONUS</Text></TouchableOpacity><TouchableOpacity style={s.ab} onPress={()=>setScreen('wallet')}><Text style={s.abt}>WALLET{'\n'}NGN {ngn}</Text></TouchableOpacity><TouchableOpacity style={s.ab} onPress={()=>setScreen('shop')}><Text style={s.abt}>SHOP{'\n'}9 gifts</Text></TouchableOpacity></View>
+          <TouchableOpacity style={s.gb} onPress={watchAd}><Text style={s.gbt}>WATCH AD +50 - {YANDEX_ID} + MONETAG - v{VERSION}</Text></TouchableOpacity>
+          <View style={s.r2}><TouchableOpacity style={s.ab} onPress={()=>setScreen('tasks')}><Text style={s.abt}>TASKS{'\n'}10 offers</Text></TouchableOpacity><TouchableOpacity style={s.ab} onPress={()=>setScreen('survey')}><Text style={s.abt}>SURVEY{'\n'}+150</Text></TouchableOpacity></View>
+          <TouchableOpacity style={s.abf} onPress={()=>{addCoins(Math.floor(Math.random()*100));}}><Text style={s.abt}>SPIN & WIN 🎡 SCRATCH {scratch}/3 - v{VERSION}</Text></TouchableOpacity>
+          <TouchableOpacity style={s.abf}><Text style={s.abt}>INVITE +200 🎁 Code: {invite} - v{VERSION}</Text></TouchableOpacity>
+          <VersionTag/>
+        </>}
+
+        {screen==='tasks' && <>
+          <Text style={s.sec}>TASKS v{VERSION} - Complete & Earn</Text>
+          {[
+            ['GTBank','GTWorld App - Open Account +80','GTB80','https://www.gtbank.com',80],
+            ['PalmPay','Bonus 5,550 +100 - Code NSFM3287','PALM100','https://palmpay.com',100],
+            ['FairMoney','Loan App +90 - Code UAPM5BZ','FAIR90','https://fairmoney.io',90],
+            ['Binance','Crypto +120 - Code 1205609224','BIN120','https://binance.com',120],
+            ['PiggyVest','Save +80 - Code secrethajiya004','PIGGY80','https://piggyvest.com',80],
+            ['Moniepoint','Business +100 - Code TLEG561','MONIE100','https://moniepoint.com',100],
+            ['Flutterwave','Payment +70 - Code OAIH4CJTJI94','FLUT70','https://flutterwave.com',70],
+            ['OPay','Wallet +80','OPAY80','https://opayweb.com',80],
+            ['Kuda','Bank +80','KUDA80','https://kuda.com',80],
+            ['Carbon','Loan +70','CARB70','https://getcarbon.co',70],
+          ].map((t,i)=>(
+            <View key={i} style={s.shop}><View style={{backgroundColor:'#facc15', borderRadius:6, padding:6}}><Text style={{fontWeight:'900', fontSize:10}}>{t[0]}</Text></View><View style={{flex:1, marginLeft:10}}><Text style={{color:'#fff', fontWeight:'700', fontSize:12}}>{t[1]}</Text><Text style={{color:'#facc15', fontSize:10}}>Code: {t[2]}</Text></View><TouchableOpacity style={[s.yBtn,{padding:8, marginTop:0}]} onPress={()=>completeTask(t[2], t[4])}><Text style={[s.yTxt,{fontSize:10}]}>{completedTasks.includes(t[2])?'DONE':`+${t[4]}`}</Text></TouchableOpacity></View>
+          ))}
+          <VersionTag/><TouchableOpacity style={s.ab} onPress={()=>setScreen('home')}><Text style={s.abt}>BACK HOME v{VERSION}</Text></TouchableOpacity>
+        </>}
+
+        {screen==='wallet' && <>
+          <Text style={s.sec}>WITHDRAW OPTIONS v{VERSION}</Text><View style={s.wr}>{['MTN','Airtel','OPay','PalmPay','Bank'].map(x=><TouchableOpacity key={x} style={s.chip}><Text style={{color:'#fff', fontSize:12}}>{x}</Text></TouchableOpacity>)}</View>
+          <Text style={s.lab}>Amount</Text><TextInput style={s.inp} placeholder="100000" placeholderTextColor="#94a3b8"/><Text style={s.lab}>Details</Text><TextInput style={s.inp} placeholder="Phone/Account" placeholderTextColor="#94a3b8"/><Text style={{color:'#94a3b8', marginVertical:10}}>Ads: {ads}/5 - Balance: {coins}/{MIN_WITHDRAW} - v{VERSION} - VC #{VERSION_CODE}</Text>
+          <TouchableOpacity style={[s.yBtn,{opacity: coins>=MIN_WITHDRAW && ads>=5?1:0.4}]} disabled={coins<MIN_WITHDRAW||ads<5}><Text style={s.yTxt}>REQUEST WITHDRAWAL v{VERSION}</Text></TouchableOpacity>
+          <VersionTag/><TouchableOpacity style={s.ab} onPress={()=>setScreen('home')}><Text style={s.abt}>BACK HOME v{VERSION}</Text></TouchableOpacity>
+        </>}
+
+        {screen==='shop' && <>
+          {[
+            ['📱','MTN 1,000','20k'],['📱','Airtel 1,000','20k'],['📱','Glo 1,000','20k'],['🎮','Google Play $5','50k'],['🛒','Amazon $10','100k'],['🎮','Steam $10','100k'],['🎬','Netflix 1M','75k'],['💰','OPay 2,000','40k'],['🏦','Bank 5,000','100k']
+          ].map((i,k)=>(<View key={k} style={s.shop}><Text style={{fontSize:20}}>{i[0]}</Text><View style={{flex:1, marginLeft:10}}><Text style={{color:'#fff', fontWeight:'700'}}>{i[1]}</Text><Text style={{color:'#94a3b8', fontSize:11}}>{i[2]} coins</Text></View><View style={s.low}><Text style={{fontSize:11}}>Low</Text></View></View>))}
+          <VersionTag/><TouchableOpacity style={s.ab} onPress={()=>setScreen('home')}><Text style={s.abt}>BACK HOME v{VERSION}</Text></TouchableOpacity>
+        </>}
+
+        <View style={s.bottom}><TouchableOpacity onPress={()=>setScreen('home')}><Text style={[s.bTxt, screen==='home'&&{color:'#facc15'}]}>Home</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('tasks')}><Text style={[s.bTxt, screen==='tasks'&&{color:'#facc15'}]}>Tasks</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('survey')}><Text style={[s.bTxt, screen==='survey'&&{color:'#facc15'}]}>Survey</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('wallet')}><Text style={[s.bTxt, screen==='wallet'&&{color:'#facc15'}]}>Wallet</Text></TouchableOpacity><TouchableOpacity onPress={()=>setScreen('shop')}><Text style={[s.bTxt, screen==='shop'&&{color:'#facc15'}]}>Shop</Text></TouchableOpacity></View>
+        <View style={{height:20}}/><VersionTag/><View style={{height:80}}/>
+      </ScrollView>
     );
   }
-
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      {screen === 'home' ? (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <View style={styles.header}>
-            <View><Text style={styles.brand}>VYRA</Text><Text style={styles.brandSubtitle}>Rewards</Text></View>
-            <TouchableOpacity style={styles.aboutButton} onPress={showAbout}><Text style={styles.aboutButtonText}>?</Text></TouchableOpacity>
-          </View>
-          <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Your Balance</Text>
-            <Text style={styles.balance}>{points.toLocaleString()}</Text>
-            <Text style={styles.coinsLabel}>COINS</Text>
-            <TouchableOpacity style={styles.tapButton} onPress={handleTap} activeOpacity={0.8}>
-              <Text style={styles.tapButtonTitle}>TAP TO EARN</Text><Text style={styles.tapButtonSub}>+2 Coins</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.statsRow}>
-            <StatCard icon="🪙" title="Coins" value={points.toLocaleString()} />
-            <StatCard icon="👆" title="Taps" value={taps.toLocaleString()} />
-            <StatCard icon="✓" title="Tasks" value={`${completedCount}/${TASKS.length}`} />
-          </View>
-          <View style={styles.watchCard}>
-            <View style={styles.watchTextBox}><Text style={styles.watchTitle}>Watch & Earn</Text><Text style={styles.watchSubtitle}>Open an offer and get 50 Coins</Text></View>
-            <TouchableOpacity style={styles.watchButton} onPress={handleWatchAd} activeOpacity={0.8}><Text style={styles.watchButtonText}>+50</Text></TouchableOpacity>
-          </View>
-          <SectionHeader title="Earn More Coins" subtitle="Complete tasks to increase your balance" />
-          {TASKS.map(task => {
-            const isCompleted = completed.includes(task.id);
-            return (
-              <TouchableOpacity key={task.id} style={[styles.taskCard, isCompleted && styles.taskCompleted]} onPress={() => handleTask(task)} activeOpacity={0.8}>
-                <View style={styles.taskIcon}><Text style={styles.taskIconText}>{isCompleted ? '✓' : '＋'}</Text></View>
-                <View style={styles.taskInfo}>
-                  <Text style={styles.taskTitle}>{task.title}</Text>
-                  <Text style={styles.taskReward}>+{task.reward} Coins</Text>
-                  {task.code ? <Text style={styles.taskCode}>Code: {task.code}</Text> : null}
-                </View>
-                <Text style={styles.taskArrow}>{isCompleted ? '✓' : '›'}</Text>
-              </TouchableOpacity>
-            );
-          })}
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare}><Text style={styles.shareButtonText}>Share Vyra Rewards</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.resetButton} onPress={resetApp}><Text style={styles.resetButtonText}>Reset Test Data</Text></TouchableOpacity>
-          <Text style={styles.versionText}>Vyra Rewards v{APP_VERSION}</Text>
-        </ScrollView>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <View style={styles.header}><View><Text style={styles.brand}>VYRA</Text><Text style={styles.brandSubtitle}>Wallet</Text></View></View>
-          <View style={styles.walletBalanceCard}><Text style={styles.balanceLabel}>Available Coins</Text><Text style={styles.balance}>{points.toLocaleString()}</Text><Text style={styles.coinsLabel}>COINS</Text></View>
-          <SectionHeader title="Withdraw" subtitle={`Minimum withdrawal: ${MIN_WITHDRAW.toLocaleString()} Coins`} />
-          <View style={styles.methodRow}>
-            {['OPay', 'PalmPay', 'Bank'].map(method => (
-              <TouchableOpacity key={method} style={[styles.methodButton, withdrawMethod === method && styles.methodButtonActive]} onPress={async () => { setWithdrawMethod(method); await AsyncStorage.setItem(STORAGE.withdrawMethod, method); }}>
-                <Text style={[styles.methodText, withdrawMethod === method && styles.methodTextActive]}>{method}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.inputLabel}>Account / Phone / Email</Text>
-          <TextInput style={styles.input} placeholder="Enter account details" placeholderTextColor="#777" value={email} onChangeText={setEmail} keyboardType="default" autoCapitalize="none" />
-          <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}><Text style={styles.withdrawButtonText}>REQUEST WITHDRAWAL</Text></TouchableOpacity>
-          <View style={styles.infoCard}><Text style={styles.infoTitle}>How It Works</Text><Text style={styles.infoText}>• Tap to earn Coins</Text><Text style={styles.infoText}>• Watch offers to earn more</Text><Text style={styles.infoText}>• Complete available tasks</Text><Text style={styles.infoText}>• Reach the minimum withdrawal</Text><Text style={styles.infoText}>• Submit your withdrawal details</Text></View>
-          <View style={styles.infoCard}><Text style={styles.infoTitle}>Task Earnings</Text><Text style={styles.taskCoinsValue}>{taskCoins.toLocaleString()} Coins</Text></View>
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare}><Text style={styles.shareButtonText}>Share Vyra Rewards</Text></TouchableOpacity>
-        </ScrollView>
-      )}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navButton} onPress={() => setScreen('home')}><Text style={[styles.navIcon, screen === 'home' && styles.navActive]}>🏠</Text><Text style={[styles.navText, screen === 'home' && styles.navActive]}>Home</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => setScreen('wallet')}><Text style={[styles.navIcon, screen === 'wallet' && styles.navActive]}>💰</Text><Text style={[styles.navText, screen === 'wallet' && styles.navActive]}>Wallet</Text></TouchableOpacity>
-      </View>
-    </View>
-  );
 }
 
-const styles = StyleSheet.create({
-  container:{flex:1,backgroundColor:'#09090f'}, content:{padding:16,paddingBottom:110}, loadingContainer:{flex:1,backgroundColor:'#09090f',alignItems:'center',justifyContent:'center'}, logoText:{color:'#fff',fontSize:42,fontWeight:'900',letterSpacing:4}, loadingText:{color:'#a78bfa',fontSize:18,marginTop:4,fontWeight:'700'}, header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:20,paddingTop:8}, brand:{color:'#fff',fontSize:28,fontWeight:'900',letterSpacing:2}, brandSubtitle:{color:'#a78bfa',fontSize:14,fontWeight:'700',marginTop:-2}, aboutButton:{width:42,height:42,borderRadius:21,backgroundColor:'#171722',alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'#29293a'}, aboutButtonText:{color:'#fff',fontSize:20,fontWeight:'800'}, balanceCard:{backgroundColor:'#151522',borderRadius:24,padding:22,alignItems:'center',borderWidth:1,borderColor:'#27273a'}, walletBalanceCard:{backgroundColor:'#151522',borderRadius:24,padding:24,alignItems:'center',borderWidth:1,borderColor:'#27273a',marginBottom:24}, balanceLabel:{color:'#9b9bab',fontSize:14,fontWeight:'600'}, balance:{color:'#fff',fontSize:44,fontWeight:'900',marginTop:6}, coinsLabel:{color:'#a78bfa',fontSize:12,fontWeight:'900',letterSpacing:2}, tapButton:{marginTop:18,width:'100%',backgroundColor:'#7c3aed',borderRadius:18,paddingVertical:16,alignItems:'center'}, tapButtonTitle:{color:'#fff',fontSize:17,fontWeight:'900'}, tapButtonSub:{color:'#e9ddff',fontSize:12,marginTop:3,fontWeight:'700'}, statsRow:{flexDirection:'row',gap:10,marginTop:14}, statCard:{flex:1,backgroundColor:'#151522',borderRadius:18,paddingVertical:14,alignItems:'center',borderWidth:1,borderColor:'#27273a'}, statIcon:{fontSize:18,marginBottom:4}, statValue:{color:'#fff',fontSize:17,fontWeight:'900'}, statTitle:{color:'#858595',fontSize:11,marginTop:2}, watchCard:{marginTop:18,backgroundColor:'#171725',borderRadius:20,padding:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderWidth:1,borderColor:'#29293d'}, watchTextBox:{flex:1,paddingRight:12}, watchTitle:{color:'#fff',fontSize:17,fontWeight:'900'}, watchSubtitle:{color:'#8f8fa0',fontSize:12,marginTop:4,lineHeight:17}, watchButton:{backgroundColor:'#22c55e',borderRadius:14,paddingHorizontal:18,paddingVertical:12}, watchButtonText:{color:'#fff',fontWeight:'900',fontSize:15}, sectionHeader:{marginTop:24,marginBottom:12}, sectionTitle:{color:'#fff',fontSize:20,fontWeight:'900'}, sectionSubtitle:{color:'#858595',fontSize:12,marginTop:4}, taskCard:{backgroundColor:'#151522',borderRadius:18,padding:14,marginBottom:10,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:'#27273a'}, taskCompleted:{opacity:0.65}, taskIcon:{width:44,height:44,borderRadius:14,backgroundColor:'#241b3a',alignItems:'center',justifyContent:'center',marginRight:12}, taskIconText:{color:'#a78bfa',fontSize:22,fontWeight:'900'}, taskInfo:{flex:1}, taskTitle:{color:'#fff',fontSize:14,fontWeight:'800'}, taskReward:{color:'#22c55e',fontSize:12,fontWeight:'800',marginTop:4}, taskCode:{color:'#77778a',fontSize:10,marginTop:3}, taskArrow:{color:'#8d8da0',fontSize:25,fontWeight:'500',paddingLeft:8}, shareButton:{marginTop:18,backgroundColor:'#242433',borderRadius:16,paddingVertical:15,alignItems:'center',borderWidth:1,borderColor:'#343447'}, shareButtonText:{color:'#fff',fontSize:14,fontWeight:'800'}, resetButton:{marginTop:10,alignItems:'center',paddingVertical:12}, resetButtonText:{color:'#77778a',fontSize:12,fontWeight:'700'}, versionText:{color:'#555565',textAlign:'center',fontSize:10,marginTop:6}, methodRow:{flexDirection:'row',gap:8,marginBottom:20}, methodButton:{flex:1,backgroundColor:'#151522',borderRadius:14,paddingVertical:13,alignItems:'center',borderWidth:1,borderColor:'#29293a'}, methodButtonActive:{backgroundColor:'#7c3aed',borderColor:'#7c3aed'}, methodText:{color:'#888899',fontSize:12,fontWeight:'800'}, methodTextActive:{color:'#fff'}, inputLabel:{color:'#bbbbca',fontSize:12,fontWeight:'700',marginBottom:8}, input:{backgroundColor:'#151522',borderRadius:15,borderWidth:1,borderColor:'#29293a',color:'#fff',paddingHorizontal:15,paddingVertical:14,fontSize:14,marginBottom:14}, withdrawButton:{backgroundColor:'#7c3aed',borderRadius:16,paddingVertical:16,alignItems:'center'}, withdrawButtonText:{color:'#fff',fontSize:14,fontWeight:'900'}, infoCard:{backgroundColor:'#151522',borderRadius:18,padding:18,marginTop:16,borderWidth:1,borderColor:'#27273a'}, infoTitle:{color:'#fff',fontSize:16,fontWeight:'900',marginBottom:10}, infoText:{color:'#9999aa',fontSize:13,marginBottom:7,lineHeight:19}, taskCoinsValue:{color:'#22c55e',fontSize:25,fontWeight:'900'}, bottomNav:{position:'absolute',left:12,right:12,bottom:12,height:66,backgroundColor:'#151522',borderRadius:20,borderWidth:1,borderColor:'#29293a',flexDirection:'row',alignItems:'center',justifyContent:'space-around'}, navButton:{flex:1,alignItems:'center',justifyContent:'center'}, navIcon:{fontSize:20,opacity:0.6}, navText:{color:'#77778a',fontSize:10,fontWeight:'700',marginTop:3}, navActive:{color:'#a78bfa',opacity:1}
+const s = StyleSheet.create({
+  cont:{flex:1, backgroundColor:'#0a1931', padding:20, justifyContent:'center'}, load:{flex:1, backgroundColor:'#0a1931', alignItems:'center', justifyContent:'center'},
+  logo:{color:'#fff', fontSize:26, fontWeight:'900', textAlign:'center'}, sub:{color:'#facc15', textAlign:'center', marginBottom:18},
+  card:{backgroundColor:'#132a4f', borderRadius:16, padding:18, borderWidth:1, borderColor:'#facc1530'},
+  lab:{color:'#facc15', marginTop:10, fontWeight:'700', fontSize:12}, inp:{backgroundColor:'#0f2342', borderWidth:1, borderColor:'#facc1530', borderRadius:10, padding:12, color:'#fff', marginTop:6},
+  yBtn:{backgroundColor:'#facc15', padding:14, borderRadius:10, marginTop:12, alignItems:'center'}, yTxt:{color:'#0a1931', fontWeight:'900'},
+  main:{flex:1, backgroundColor:'#0a1931', padding:10}, head:{flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingVertical:10, borderBottomWidth:1, borderColor:'#ffffff15'},
+  logoSm:{color:'#fff', fontWeight:'900'}, out:{backgroundColor:'#facc15', paddingHorizontal:14, paddingVertical:6, borderRadius:14},
+  r3:{flexDirection:'row', marginTop:10}, mc:{backgroundColor:'#132a4f', flex:1, margin:3, borderRadius:10, padding:10, alignItems:'center', borderWidth:1, borderColor:'#ffffff10'},
+  ml:{color:'#94a3b8', fontSize:11}, mv:{color:'#facc15', fontWeight:'900'},
+  tot:{backgroundColor:'#132a4f', borderRadius:14, padding:16, alignItems:'center', marginTop:10, borderWidth:1, borderColor:'#facc1530'},
+  prog:{backgroundColor:'#132a4f', borderRadius:10, padding:10, marginTop:10, borderWidth:1, borderColor:'#ffffff10'}, pb:{height:7, backgroundColor:'#0a1931', borderRadius:4, marginTop:6}, pf:{height:7, backgroundColor:'#facc15', borderRadius:4},
+  tap:{backgroundColor:'#facc15', width:190, height:190, borderRadius:95, alignSelf:'center', marginTop:16, alignItems:'center', justifyContent:'center'},
+  ab:{backgroundColor:'#132a4f', flex:1, margin:3, borderRadius:10, padding:12, alignItems:'center', borderWidth:1, borderColor:'#facc15'}, abt:{color:'#facc15', fontWeight:'700', textAlign:'center', fontSize:12},
+  gb:{backgroundColor:'#2a344e', padding:12, borderRadius:10, marginTop:10, alignItems:'center'}, gbt:{color:'#94a3b8', fontWeight:'700', fontSize:11},
+  r2:{flexDirection:'row', marginTop:6}, abf:{backgroundColor:'#132a4f', borderRadius:10, padding:12, alignItems:'center', marginTop:6, borderWidth:1, borderColor:'#facc15'},
+  sec:{color:'#facc15', fontWeight:'900', marginTop:14}, wr:{flexDirection:'row', flexWrap:'wrap', marginTop:6}, chip:{borderWidth:1, borderColor:'#ffffff30', paddingHorizontal:10, paddingVertical:6, borderRadius:16, margin:3},
+  shop:{flexDirection:'row', backgroundColor:'#132a4f', padding:12, borderRadius:10, marginTop:6, alignItems:'center', borderWidth:1, borderColor:'#ffffff10'}, low:{backgroundColor:'#3f3f46', paddingHorizontal:10, paddingVertical:4, borderRadius:10},
+  bottom:{flexDirection:'row', justifyContent:'space-around', backgroundColor:'#132a4f', padding:12, borderRadius:12, marginTop:16, borderWidth:1, borderColor:'#facc1530'}, bTxt:{color:'#94a3b8', fontWeight:'700'},
+  verBox:{backgroundColor:'#0f2342', padding:8, borderRadius:8, marginTop:12, alignItems:'center', borderWidth:1, borderColor:'#facc1520'}, verText:{color:'#facc15', fontSize:9, fontWeight:'900', textAlign:'center'}, verSub:{color:'#475569', fontSize:7, textAlign:'center', marginTop:2}
 });
