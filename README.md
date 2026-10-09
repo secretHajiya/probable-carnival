@@ -1,7 +1,6 @@
 # Vyra Rewards — Test App
 
 Complete Expo Android test project.
-
 - Package: `com.vyra.rewards`
 - Version: `1.0.1`
 - Monetag Direct Link is included in `App.tsx`.
