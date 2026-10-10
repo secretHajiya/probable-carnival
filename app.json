@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Vyra Rewards",
+    "slug": "vyra-rewards",
+    "version": "1.0.4",
+    "orientation": "portrait",
+    "android": {
+      "package": "com.vyrarewards.earn",
+      "versionCode": 5,
+      "permissions": ["android.permission.INTERNET"]
+    },
+    "platforms": ["android"],
+    "splash": {
+      "backgroundColor": "#09090f",
+      "resizeMode": "contain"
+    },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-4487679675698542~3146823846"
+        }
+      ]
+    ]
+  }
+}
