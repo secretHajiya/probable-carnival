@@ -1,4 +1,4 @@
-Vyra Rewards.Earn AdMob update draft v1.0.3
+Vyra Rewards.Earn AdMob update draft v1..3
 
 Files:
 - App.tsx
