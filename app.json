@@ -1,4 +1,3 @@
-
 {
   "expo": {
     "name": "Vyra Rewards",
@@ -27,6 +26,11 @@
           "androidAppId": "ca-app-pub-4487679675698542~3146823846"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "583062d7-39bf-4c12-86d4-804f07cd1100"
+      }
+    }
   }
 }
