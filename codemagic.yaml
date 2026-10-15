@@ -1,27 +1,19 @@
 workflows:
-  vyra-apk:
-    name: Vyra Rewards Android APK
+  android-build:
+    name: Vyra Rewards Pro Build
     max_build_duration: 60
-    instance_type: mac_mini_m2
+    instance_type: mac_mini_m1
     environment:
       vars:
-        PACKAGE_NAME: "com.vyrarewards.earn"
-      node: 20
-      java: 17
+        EXPO_TOKEN: ""
+      node: 20.11.0
     scripts:
-      - name: Install npm dependencies
-        script: npm install --legacy-peer-deps
-      - name: Generate Android native project
-        script: npx expo prebuild --platform android --non-interactive
-      - name: Build Android release APK
+      - name: Install dependencies
         script: |
-          cd android
-          ./gradlew --no-daemon assembleRelease
+          npm install -g expo-cli eas-cli
+          npm install
+      - name: Build Android APK
+        script: |
+          eas build --platform android --profile preview --non-interactive --no-wait
     artifacts:
-      - android/app/build/outputs/apk/release/app-release.apk
-      - android/app/build/outputs/mapping/release/mapping.txt
-
-    publishing:
-      email:
-        recipients:
-          - abdullahiwaziri9004@gmail.com
+      - build/*.apk
