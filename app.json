@@ -1,37 +1,36 @@
 {
-  "expo": {
-    "name": "Vyra Rewards",
-    "slug": "vyra-rewards",
-    "version": "1.0.4",
-    "owner": "secrethajiyas-team",
-    "icon": "./assets/icon.png",
-    "orientation": "portrait",
-    "android": {
-      "package": "com.vyrarewards.earn",
-      "versionCode": 5,
-      "permissions": [
-        "android.permission.INTERNET"
-      ]
+  "name": "Vyra Rewards",
+  "slug": "vyra-rewards",
+  "version": "1.0.5",
+  "owner": "secrethajiyas-team",
+  "orientation": "portrait",
+  "icon": "./assets/icon.png",
+  "splash": {
+    "image": "./assets/icon.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#09090f"
+  },
+  "android": {
+    "package": "com.vyrarewards.earn",
+    "versionCode": 6,
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/icon.png",
+      "backgroundColor": "#09090f"
     },
-    "platforms": [
-      "android"
-    ],
-    "splash": {
-      "backgroundColor": "#09090f",
-      "resizeMode": "contain"
-    },
-    "plugins": [
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-4487679675698542~3146823846"
-        }
-      ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "583062d7-39bf-4c12-86d4-804f07cd1100"
+    "permissions": ["android.permission.INTERNET"]
+  },
+  "platforms": ["android"],
+  "plugins": [
+    [
+      "react-native-google-mobile-ads",
+      {
+        "androidAppId": "ca-app-pub-4487679675698542~3146823846"
       }
+    ]
+  ],
+  "extra": {
+    "eas": {
+      "projectId": "583062d7-39bf-4c12-86d4-804f07cd1100"
     }
   }
 }
