@@ -33,6 +33,11 @@ const QUIZ_QUESTIONS = [
   { category: 'History', question: 'In which year did Nigeria gain independence?', options: ['1957', '1960', '1963', '1970'], correctIndex: 1 },
 ];
 
+const DAILY_POLLS = [
+  {q: 'Which mobile network do you use most?', opts: ['MTN','Airtel','Glo','9mobile']},
+  {q: 'When do you prefer using reward apps?', opts: ['Morning','Afternoon','Evening','Night']},
+  {q: 'What reward do you like most?', opts: ['Airtime','Cash','Data','Gift Card']},
+];
 const TASKS = [
   ['GTB80', 'GTBank / GTWorld'], ['PALM100', 'PalmPay'],
   ['FAIR90', 'FairMoney'], ['BIN120', 'Binance'],
@@ -56,13 +61,13 @@ export default function App() {
   const [interstitialLoaded, setInterstitialLoaded] = useState(false);
   const [tapCount, setTapCount] = useState(0);
   const [totalTaps, setTotalTaps] = useState(0);
-  const [surveyStep, setSurveyStep] = useState(0);
+  const [dailyPollDate, setDailyPollDate] = useState(null);
+  const [dailyPollIndex, setDailyPollIndex] = useState(0);
   const [rewardedLoaded, setRewardedLoaded] = useState(false);
   const [adMessage, setAdMessage] = useState('Loading rewarded ad…');
   const [rewardedAd] = useState(() => RewardedAd.createForAdRequest(rewardedUnitId, { requestNonPersonalizedAdsOnly: true }));
   const [interstitialAd] = useState(() => InterstitialAd.createForAdRequest(interstitialUnitId, { requestNonPersonalizedAdsOnly: true }));
-
-  useEffect(() => {
+    useEffect(() => {
     let active = true;
     mobileAds().initialize().catch(() => {});
     (async () => {
@@ -78,6 +83,10 @@ export default function App() {
         setQuizBalance(parseInt(savedQuizBalance || '0', 10) || 0);
         setTapCount(parseInt(savedTap || '0', 10) || 0);
         setTotalTaps(parseInt(savedTotal || '0', 10) || 0);
+        const savedPollDate = await AsyncStorage.getItem('vyra_daily_poll_date');
+        const savedPollIdx = await AsyncStorage.getItem('vyra_daily_poll_idx');
+        if (savedPollDate) setDailyPollDate(savedPollDate);
+        if (savedPollIdx) setDailyPollIndex(parseInt(savedPollIdx,10)||0);
         const net = await NetInfo.fetch();
         if (!net.isConnected) Alert.alert('Internet required', 'Turn on Wi-Fi or mobile data to load ads.');
         setScreen(savedUser? 'home' : 'register');
@@ -85,7 +94,8 @@ export default function App() {
     })();
     return () => { active = false; };
   }, []);
-    useEffect(() => {
+
+  useEffect(() => {
     const loaded = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => { setRewardedLoaded(true); setAdMessage('Watch ad for +10 bonus points'); });
     const earned = rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
       setBonusPoints(prev => { const next = prev + 10; AsyncStorage.setItem('vyra_bonus_points', String(next)).catch(() => {}); return next; });
@@ -172,7 +182,7 @@ export default function App() {
           <View style={s.tot}><Text style={s.ml}>QUIZ BALANCE</Text><Text style={s.balance}>{quizBalance}</Text></View>
           <TouchableOpacity style={s.abf} onPress={startQuiz}><Text style={s.abt}>🧠 PLAY QUIZ</Text></TouchableOpacity>
           <TouchableOpacity style={s.abf} onPress={() => setScreen('tasks')}><Text style={s.abt}>REFERRALS & OFFERS</Text></TouchableOpacity>
-          <TouchableOpacity style={s.abf} onPress={() => setScreen('survey')}><Text style={s.abt}>SURVEY DEMO</Text></TouchableOpacity>
+          <TouchableOpacity style={s.abf} onPress={() => setScreen('survey')}><Text style={s.abt}>📊 DAILY POLL • EARN 10 POINTS</Text></TouchableOpacity>
           <TouchableOpacity style={s.abf} onPress={() => setScreen('wallet')}><Text style={s.abt}>REWARDS STATUS</Text></TouchableOpacity>
           <Banner />
         </>}
@@ -190,10 +200,12 @@ export default function App() {
         {screen === 'quiz' && <><Text style={s.sec}>🧠 VYRA QUIZ</Text>{!quizFinished? <View style={s.card}><Text style={s.progressText}>Question {quizIndex + 1}/{QUIZ_QUESTIONS.length}</Text><Text style={s.question}>{QUIZ_QUESTIONS[quizIndex].question}</Text>{QUIZ_QUESTIONS[quizIndex].options.map((option, index) => <TouchableOpacity key={option} disabled={quizAnswered} style={[s.yBtn, { backgroundColor: quizAnswered && index === QUIZ_QUESTIONS[quizIndex].correctIndex? '#22c55e' : '#facc15' }]} onPress={() => answerQuiz(index)}><Text style={s.yTxt}>{option}</Text></TouchableOpacity>)}<Text style={s.note}>Each correct answer adds 10 points.</Text>{quizAnswered && <TouchableOpacity style={s.secondaryBtn} onPress={nextQuizQuestion}><Text style={s.secondaryText}>{quizIndex === QUIZ_QUESTIONS.length - 1? 'VIEW RESULT' : 'NEXT'}</Text></TouchableOpacity>}</View> : <View style={s.card}><Text style={s.question}>Quiz complete!</Text><Text style={s.balance}>{quizScore} / 100</Text><TouchableOpacity style={s.yBtn} onPress={() => setScreen('home')}><Text style={s.yTxt}>BACK TO HOME</Text></TouchableOpacity></View>}</>}
 
         {screen === 'tasks' && <><Text style={s.sec}>REFERRALS & OFFERS</Text>{TASKS.map(([id, name]) => <View key={id} style={s.shop}><View style={{ flex: 1 }}><Text style={s.itemTitle}>{name}</Text><Text style={s.demoLabel}>NOT ACTIVE</Text></View><TouchableOpacity style={[s.secondaryBtn, { marginTop: 0 }]} onPress={() => Alert.alert('Offer not configured')}><Text style={s.secondaryText}>DETAILS</Text></TouchableOpacity></View>)}</>}
-        {screen === 'survey' && <><Text style={s.sec}>SURVEY • DEMO ONLY</Text><View style={s.card}><Text style={s.progressText}>Question {surveyStep + 1}/3</Text>{surveyStep === 0 && <><Text style={s.question}>How often do you use banking apps?</Text><TouchableOpacity style={s.yBtn} onPress={() => setSurveyStep(1)}><Text style={s.yTxt}>Daily</Text></TouchableOpacity></>}{surveyStep === 1 && <><Text style={s.question}>Which mobile wallet do you prefer?</Text><TouchableOpacity style={s.yBtn} onPress={() => setSurveyStep(2)}><Text style={s.yTxt}>OPay</Text></TouchableOpacity></>}{surveyStep === 2 && <><TouchableOpacity style={s.yBtn} onPress={() => { setSurveyStep(0); setScreen('home'); }}><Text style={s.yTxt}>5 Stars ⭐</Text></TouchableOpacity></>}</View></>}
+
+        {screen === 'survey' && <><Text style={s.sec}>📊 DAILY POLL • REAL REWARD</Text><View style={s.card}><Text style={s.progressText}>Poll #{dailyPollIndex+1} • Earn 10 Points (Once per day)</Text><Text style={s.question}>{DAILY_POLLS[dailyPollIndex % DAILY_POLLS.length].q}</Text>{DAILY_POLLS[dailyPollIndex % DAILY_POLLS.length].opts.map(opt => (<TouchableOpacity key={opt} style={s.yBtn} onPress={async () => { const today = new Date().toDateString(); if(dailyPollDate === today){ Alert.alert('Already answered','You already earned 10 points today. Come back tomorrow!'); return; } const next = bonusPoints + 10; setBonusPoints(next); setDailyPollDate(today); const nextIdx = dailyPollIndex + 1; setDailyPollIndex(nextIdx); await AsyncStorage.setItem('vyra_bonus_points', String(next)); await AsyncStorage.setItem('vyra_daily_poll_date', today); await AsyncStorage.setItem('vyra_daily_poll_idx', String(nextIdx)); Alert.alert('✅ +10 Points Added!','Thanks for your opinion!'); setScreen('home'); }}><Text style={s.yTxt}>{opt}</Text></TouchableOpacity>))}{dailyPollDate === new Date().toDateString() && <Text style={s.noteCenter}>✅ You earned today. New poll tomorrow!</Text>}</View><Banner /></>}
+
         {screen === 'wallet' && <><Text style={s.sec}>REWARDS STATUS</Text><View style={s.card}><Text style={s.question}>Cashable balance: Not enabled</Text><TouchableOpacity style={s.yBtn} onPress={() => Alert.alert('Not enabled')}><Text style={s.yTxt}>WITHDRAWALS NOT AVAILABLE</Text></TouchableOpacity></View></>}
 
-        <View style={s.bottom}>{[['home', 'Home'], ['quiz', 'Quiz'], ['tasks', 'Offers'], ['survey', 'Survey'], ['wallet', 'Rewards']].map(([name, label]) => <TouchableOpacity key={name} onPress={() => setScreen(name)}><Text style={[s.bTxt, screen === name && { color: '#facc15' }]}>{label}</Text></TouchableOpacity>)}</View>
+        <View style={s.bottom}>{[['home', 'Home'], ['quiz', 'Quiz'], ['tasks', 'Offers'], ['survey', 'Poll'], ['wallet', 'Rewards']].map(([name, label]) => <TouchableOpacity key={name} onPress={() => setScreen(name)}><Text style={[s.bTxt, screen === name && { color: '#facc15' }]}>{label}</Text></TouchableOpacity>)}</View>
         <VersionTag />
       </ScrollView>
     </View>
