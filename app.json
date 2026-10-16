@@ -8,25 +8,17 @@
     "android": {
       "package": "com.vyrarewards.earn",
       "versionCode": 7,
-      "permissions": [
-        "android.permission.INTERNET"
-      ]
+      "permissions": ["android.permission.INTERNET"]
     },
-    "platforms": [
-      "android"
-    ],
+    "platforms": ["android"],
     "splash": {
       "backgroundColor": "#09090f",
       "resizeMode": "contain"
     },
     "plugins": [
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-4487679675698542~3146823846"
-        }
-      ]
+      ["react-native-google-mobile-ads", {"androidAppId": "ca-app-pub-4487679675698542~3146823846"}]
     ],
+    "owner": "vyrarewardspros-team",
     "extra": {
       "eas": {
         "projectId": "3283d734-fc49-47b7-83c3-e376d236c102"
