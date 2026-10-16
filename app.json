@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.vyrarewards.earn",
-      "versionCode": 4,
+      "versionCode": 6,
       "permissions": [
         "android.permission.INTERNET"
       ]
