@@ -17,16 +17,16 @@ const BANNER_ID = 'ca-app-pub-4487679675698542/5498846987';
 const REWARDED_ID = 'ca-app-pub-4487679675698542/9277117923';
 const INTERSTITIAL_ID = 'ca-app-pub-4487679675698542/7002308379';
 
-const bannerUnitId = __DEV__? TestIds.BANNER : BANNER_ID;
-const rewardedUnitId = __DEV__? TestIds.REWARDED : REWARDED_ID;
-const interstitialUnitId = __DEV__? TestIds.INTERSTITIAL : INTERSTITIAL_ID;
+const bannerUnitId = __DEV__ ? TestIds.BANNER : BANNER_ID;
+const rewardedUnitId = __DEV__ ? TestIds.REWARDED : REWARDED_ID;
+const interstitialUnitId = __DEV__ ? TestIds.INTERSTITIAL : INTERSTITIAL_ID;
 
 const QUIZ_QUESTIONS = [
   { category: 'General Knowledge', question: 'What is the capital city of Nigeria?', options: ['Kano', 'Abuja', 'Lagos', 'Kaduna'], correctIndex: 1 },
   { category: 'Science', question: 'Which planet is known as the Red Planet?', options: ['Venus', 'Jupiter', 'Mars', 'Mercury'], correctIndex: 2 },
   { category: 'Mathematics', question: 'What is 12 × 8?', options: ['88', '96', '108', '86'], correctIndex: 1 },
   { category: 'Technology', question: 'Which device is mainly used to type text into a computer?', options: ['Monitor', 'Speaker', 'Keyboard', 'Printer'], correctIndex: 2 },
-  { category: 'History', question: 'Who was Nigeria’s first President?', options: ['Nnamdi Azikiwe', 'Olusegun Obasanjo', 'Yakubu Gowon', 'Murtala Mohammed'], correctIndex: 0 },
+  { category: 'History', question: "Who was Nigeria's first President?", options: ['Nnamdi Azikiwe', 'Olusegun Obasanjo', 'Yakubu Gowon', 'Murtala Mohammed'], correctIndex: 0 },
   { category: 'Science', question: 'Which gas do plants absorb from the air?', options: ['Oxygen', 'Carbon dioxide', 'Hydrogen', 'Helium'], correctIndex: 1 },
   { category: 'General Knowledge', question: 'What is the largest ocean on Earth?', options: ['Atlantic Ocean', 'Indian Ocean', 'Arctic Ocean', 'Pacific Ocean'], correctIndex: 3 },
   { category: 'Technology', question: 'What does CPU stand for?', options: ['Central Processing Unit', 'Computer Power Utility', 'Central Program User', 'Core Processing Upload'], correctIndex: 0 },
@@ -61,10 +61,105 @@ export default function App() {
   const [totalTaps, setTotalTaps] = useState(0);
   const [surveyStep, setSurveyStep] = useState(0);
   const [rewardedLoaded, setRewardedLoaded] = useState(false);
-  const [adMessage, setAdMessage] = useState('Loading rewarded ad…');
+  const [adMessage, setAdMessage] = useState('Loading rewarded ad...');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
-t a moment and try again.'); return; }
+  const [isConnected, setIsConnected] = useState(true);
+
+  const EMAILJS_SERVICE_ID = 'service_eo4mafe';
+  const EMAILJS_TEMPLATE_ID = 'template_vla0zff';
+  const EMAILJS_PUBLIC_KEY = 'Ee45lolv3ZCjOSWUy';
+
+  const rewardedAd = React.useRef(RewardedAd.createForAdRequest(rewardedUnitId, { requestNonPersonalizedAdsOnly: true })).current;
+  const interstitialAd = React.useRef(InterstitialAd.createForAdRequest(interstitialUnitId, { requestNonPersonalizedAdsOnly: true })).current;
+
+  useEffect(() => {
+    const unsubNet = NetInfo.addEventListener(s => setIsConnected(!!s.isConnected));
+    mobileAds().initialize().then(() => console.log('Ads initialized'));
+    const unsubRewardedLoaded = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => { setRewardedLoaded(true); setAdMessage('Watch Ad'); });
+    const unsubRewardedEarned = rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, reward => {
+      const newPoints = bonusPoints + 10;
+      setBonusPoints(newPoints);
+      AsyncStorage.setItem('vyra_bonus', String(newPoints)).catch(()=>{});
+      Alert.alert('Reward!', '+10 Bonus Points added');
+    });
+    const unsubRewardedClosed = rewardedAd.addAdEventListener(AdEventType.CLOSED, () => { setRewardedLoaded(false); rewardedAd.load(); });
+    const unsubInterLoaded = interstitialAd.addAdEventListener(AdEventType.LOADED, () => setInterstitialLoaded(true));
+    const unsubInterClosed = interstitialAd.addAdEventListener(AdEventType.CLOSED, () => { setInterstitialLoaded(false); interstitialAd.load(); });
+    rewardedAd.load();
+    interstitialAd.load();
+    loadData();
+    return () => { unsubNet(); unsubRewardedLoaded(); unsubRewardedEarned(); unsubRewardedClosed(); unsubInterLoaded(); unsubInterClosed(); };
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const savedUser = await AsyncStorage.getItem('vyra_user');
+      const savedBonus = await AsyncStorage.getItem('vyra_bonus');
+      const savedTaps = await AsyncStorage.getItem('vyra_total_taps');
+      const savedTapCount = await AsyncStorage.getItem('vyra_tap_count');
+      const savedQuizBal = await AsyncStorage.getItem('vyra_quiz_balance');
+      if (savedUser) { setUser(JSON.parse(savedUser)); setScreen('home'); }
+      else setScreen('register');
+      if (savedBonus) setBonusPoints(parseInt(savedBonus));
+      if (savedTaps) setTotalTaps(parseInt(savedTaps));
+      if (savedTapCount) setTapCount(parseInt(savedTapCount));
+      if (savedQuizBal) setQuizBalance(parseInt(savedQuizBal));
+    } catch (e) { setScreen('register'); }
+  };
+
+  const checkInternet = async () => {
+    try { const net = await NetInfo.fetch(); if (!net.isConnected) { Alert.alert('Internet required', 'Please turn on Wi-Fi or mobile data.'); return false; } return true; }
+        catch { Alert.alert('Connection error', 'Could not check internet connection.'); return false; }
+  };
+
+  const createAccount = async () => {
+    if (!(await checkInternet())) return;
+    if (!user.name.trim() || !user.phone.trim() || !user.email.trim()) { Alert.alert('Missing information', 'Please fill all fields'); return; }
+    const email = user.email.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) { Alert.alert('Invalid email', 'Enter valid email'); return; }
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setSendingOtp(true);
+    try {
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: EMAILJS_SERVICE_ID,
+          template_id: EMAILJS_TEMPLATE_ID,
+          user_id: EMAILJS_PUBLIC_KEY,
+          template_params: { to_email: email, otp: code, to_name: user.name }
+        })
+      });
+      const text = await response.text();
+      if (!response.ok) { throw new Error(text); }
+      setUser(old => ({ ...old, email }));
+      setEmailOtp(code);
+      setOtpExpiresAt(Date.now() + 10 * 60 * 1000);
+      setOtp('');
+      setScreen('verify');
+      Alert.alert('Sent!', `Code ya tafi zuwa ${email}`);
+    } catch (e) {
+      Alert.alert('Email Error', String(e.message).slice(0, 800));
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyAccount = async () => {
+    if (!emailOtp) { Alert.alert('No code sent', 'Please request code again'); return; }
+    if (Date.now() > otpExpiresAt) { setEmailOtp(''); Alert.alert('Code expired', 'Request new one'); return; }
+    if (otp.trim() !== emailOtp) { Alert.alert('Incorrect code', 'Enter 6-digit code'); return; }
+    try {
+      await AsyncStorage.setItem('vyra_user', JSON.stringify(user));
+      setEmailOtp('');
+      setScreen('home');
+    } catch { Alert.alert('Save error', 'Could not save'); }
+  };
+
+  const watchAd = async () => {
+    if (!(await checkInternet())) return;
+    if (!rewardedLoaded) { rewardedAd.load(); Alert.alert('Ad not ready', 'Wait a moment and try again.'); return; }
     try { await rewardedAd.show(); setRewardedLoaded(false); }
     catch { setRewardedLoaded(false); Alert.alert('Ad unavailable', 'The ad could not be shown.'); }
   };
@@ -116,7 +211,7 @@ t a moment and try again.'); return; }
   const Banner = () => (<View style={s.banner}><BannerAd unitId={bannerUnitId} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} /></View>);
 
   if (screen === 'loading') return (<View style={s.load}><Text style={{ fontSize: 50 }}>👑</Text><Text style={s.logo}>VYRA <Text style={{ color: '#facc15' }}>REWARDS</Text></Text><ActivityIndicator color="#facc15" style={{ marginTop: 16 }} /><VersionTag /></View>);
-  if (screen === 'register') return (<ScrollView contentContainerStyle={s.cont} keyboardShouldPersistTaps="handled"><Text style={s.logo}>VYRA <Text style={{ color: '#facc15' }}>REWARDS</Text></Text><Text style={s.sub}>Welcome • Verify your email</Text><View style={s.card}><Text style={s.lab}>Full name *</Text><TextInput style={s.inp} placeholder="Full name" value={user.name} onChangeText={v => setUser(old => ({...old, name: v }))} /><Text style={s.lab}>Phone *</Text><TextInput style={s.inp} placeholder="080..." keyboardType="phone-pad" value={user.phone} onChangeText={v => setUser(old => ({...old, phone: v }))} /><Text style={s.lab}>Email *</Text><TextInput style={s.inp} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={user.email} onChangeText={v => setUser(old => ({...old, email: v }))} /><TouchableOpacity style={s.yBtn} onPress={createAccount} disabled={sendingOtp}><Text style={s.yTxt}>{sendingOtp ? 'SENDING CODE…' : 'SEND VERIFICATION CODE'}</Text></TouchableOpacity><VersionTag /></View></ScrollView>);
+  if (screen === 'register') return (<ScrollView contentContainerStyle={s.cont} keyboardShouldPersistTaps="handled"><Text style={s.logo}>VYRA <Text style={{ color: '#facc15' }}>REWARDS</Text></Text><Text style={s.sub}>Welcome • Verify your email</Text><View style={s.card}><Text style={s.lab}>Full name *</Text><TextInput style={s.inp} placeholder="Full name" value={user.name} onChangeText={v => setUser(old => ({...old, name: v }))} /><Text style={s.lab}>Phone *</Text><TextInput style={s.inp} placeholder="080..." keyboardType="phone-pad" value={user.phone} onChangeText={v => setUser(old => ({...old, phone: v }))} /><Text style={s.lab}>Email *</Text><TextInput style={s.inp} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={user.email} onChangeText={v => setUser(old => ({...old, email: v }))} /><TouchableOpacity style={s.yBtn} onPress={createAccount} disabled={sendingOtp}><Text style={s.yTxt}>{sendingOtp ? 'SENDING CODE...' : 'SEND VERIFICATION CODE'}</Text></TouchableOpacity><VersionTag /></View></ScrollView>);
   if (screen === 'verify') return (<ScrollView contentContainerStyle={s.cont} keyboardShouldPersistTaps="handled"><Text style={s.logo}>EMAIL VERIFICATION</Text><View style={s.card}><Text style={s.sub}>We sent a 6-digit code to {user.email}. Check your inbox and spam folder. The code expires in 10 minutes.</Text><TextInput style={[s.inp, { textAlign: 'center', fontSize: 20, letterSpacing: 6 }]} maxLength={6} keyboardType="number-pad" placeholder="6-digit code" value={otp} onChangeText={setOtp} /><TouchableOpacity style={s.yBtn} onPress={verifyAccount}><Text style={s.yTxt}>VERIFY EMAIL & CONTINUE</Text></TouchableOpacity><TouchableOpacity style={s.secondaryBtn} onPress={() => { setEmailOtp(''); setOtp(''); setScreen('register'); }}><Text style={s.secondaryText}>BACK</Text></TouchableOpacity><VersionTag /></View></ScrollView>);
 
   return (
@@ -128,8 +223,8 @@ t a moment and try again.'); return; }
           <View style={s.tot}><Text style={s.ml}>IN-APP BONUS POINTS</Text><Text style={s.balance}>{bonusPoints}</Text></View>
           <View style={s.prog}><Text style={s.progressText}>{tapCount}/50 taps</Text><View style={s.pb}><View style={[s.pf, { width: `${Math.min(100, tapCount * 2)}%` }]} /></View></View>
           <TouchableOpacity style={s.tap} onPress={tapForProgress}><Text style={s.tapDark}>VYRA</Text><Text style={s.tapDark}>TAP FOR</Text><Text style={s.tapDark}>PROGRESS</Text></TouchableOpacity>
-          <TouchableOpacity style={[s.abf, { backgroundColor: '#FF6B00', borderColor: '#FF6B00' }]} onPress={() => setScreen('cpx')}>
-            <Text style={[s.abt, { color: '#fff' }]}>🎯 CPX SURVEYS - EARN POINTS (NEW)</Text>
+              <TouchableOpacity style={[s.abf, { backgroundColor: '#FF6B00', borderColor: '#FF6B00' }]} onPress={() => setScreen('cpx')}>
+            <Text style={[s.abt, { color: '#fff' }]}>🎯 CPX SURVEYS - EARN POINTS (REAL)</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.gb} onPress={watchAd}><Text style={s.gbt}>{rewardedLoaded? 'WATCH REWARDED AD • +10 BONUS POINTS' : adMessage.toUpperCase()}</Text></TouchableOpacity>
           <View style={s.tot}><Text style={s.ml}>QUIZ BALANCE</Text><Text style={s.balance}>{quizBalance}</Text></View>
@@ -139,6 +234,7 @@ t a moment and try again.'); return; }
           <TouchableOpacity style={s.abf} onPress={() => setScreen('wallet')}><Text style={s.abt}>REWARDS STATUS</Text></TouchableOpacity>
           <Banner />
         </>}
+
         {screen === 'cpx' && <>
           <Text style={s.sec}>CPX RESEARCH - REAL SURVEYS</Text>
           <View style={{ flex: 1, height: 700, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden' }}>
@@ -152,7 +248,8 @@ t a moment and try again.'); return; }
         {screen === 'quiz' && <><Text style={s.sec}>🧠 VYRA QUIZ</Text>{!quizFinished? <View style={s.card}><Text style={s.progressText}>Question {quizIndex + 1}/{QUIZ_QUESTIONS.length}</Text><Text style={s.question}>{QUIZ_QUESTIONS[quizIndex].question}</Text>{QUIZ_QUESTIONS[quizIndex].options.map((option, index) => <TouchableOpacity key={option} disabled={quizAnswered} style={[s.yBtn, { backgroundColor: quizAnswered && index === QUIZ_QUESTIONS[quizIndex].correctIndex? '#22c55e' : '#facc15' }]} onPress={() => answerQuiz(index)}><Text style={s.yTxt}>{option}</Text></TouchableOpacity>)}<Text style={s.note}>Each correct answer adds 10 points.</Text>{quizAnswered && <TouchableOpacity style={s.secondaryBtn} onPress={nextQuizQuestion}><Text style={s.secondaryText}>{quizIndex === QUIZ_QUESTIONS.length - 1? 'VIEW RESULT' : 'NEXT'}</Text></TouchableOpacity>}</View> : <View style={s.card}><Text style={s.question}>Quiz complete!</Text><Text style={s.balance}>{quizScore} / 100</Text><TouchableOpacity style={s.yBtn} onPress={() => setScreen('home')}><Text style={s.yTxt}>BACK TO HOME</Text></TouchableOpacity></View>}</>}
 
         {screen === 'tasks' && <><Text style={s.sec}>REFERRALS & OFFERS</Text>{TASKS.map(([id, name]) => <View key={id} style={s.shop}><View style={{ flex: 1 }}><Text style={s.itemTitle}>{name}</Text><Text style={s.demoLabel}>NOT ACTIVE</Text></View><TouchableOpacity style={[s.secondaryBtn, { marginTop: 0 }]} onPress={() => Alert.alert('Offer not configured')}><Text style={s.secondaryText}>DETAILS</Text></TouchableOpacity></View>)}</>}
-        {screen === 'survey' && <><Text style={s.sec}>SURVEY • DEMO ONLY</Text><View style={s.card}><Text style={s.progressText}>Question {surveyStep + 1}/3</Text>{surveyStep === 0 && <><Text style={s.question}>How often do you use banking apps?</Text><TouchableOpacity style={s.yBtn} onPress={() => setSurveyStep(1)}><Text style={s.yTxt}>Daily</Text></TouchableOpacity></>}{surveyStep === 1 && <><Text style={s.question}>Which mobile wallet do you prefer?</Text><TouchableOpacity style={s.yBtn} onPress={() => setSurveyStep(2)}><Text style={s.yTxt}>OPay</Text></TouchableOpacity></>}{surveyStep === 2 && <><TouchableOpacity style={s.yBtn} onPress={() => { setSurveyStep(0); setScreen('home'); }}><Text style={s.yTxt}>5 Stars ⭐</Text></TouchableOpacity></>}</View></>}
+        {screen === 'survey' && <><Text style={s.sec}>SURVEY • DEMO ONLY</Text><View style={s.card}><Text style={s.progressText}>Question {surveyStep + 1}/3</Text>{surveyStep === 0 && <><Text style={s.question}>How often do you use banking apps?</Text><TouchableOpacity style={s.yBtn} onPress={() => setSurveyStep(1)}><Text style={s.yTxt}>Daily</Text></TouchableOpacity></>}{surveyStep === 1 && <><Text style={s.question}>Which mobile wallet do you prefer?</Text><TouchableOpacity style={s.yBtn} onPress={() => setSurveyStep(2)}><Text style={s.yTxt}>OPay</Text></TouchableOpacity></>}{surveyStep === 2 && <><TouchableOpacity style={s.yBtn} onPress={() => { setSurveyStep(0); setScreen('home'); }}><Text style={s.yTxt}>5 Stars</Text></TouchableOpacity></>}</View></>}
+
         {screen === 'wallet' && <><Text style={s.sec}>REWARDS STATUS</Text><View style={s.card}><Text style={s.question}>Cashable balance: Not enabled</Text><TouchableOpacity style={s.yBtn} onPress={() => Alert.alert('Not enabled')}><Text style={s.yTxt}>WITHDRAWALS NOT AVAILABLE</Text></TouchableOpacity></View></>}
 
         {screen === 'settings' && <>
