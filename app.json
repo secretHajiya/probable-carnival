@@ -1,4 +1,3 @@
-
 {
   "expo": {
     "name": "Vyra Rewards",
@@ -8,7 +7,7 @@
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.vyrarewards.earn",
-      "versionCode": 6,
+      "versionCode": 7,
       "permissions": [
         "android.permission.INTERNET"
       ]
@@ -27,6 +26,11 @@
           "androidAppId": "ca-app-pub-4487679675698542~3146823846"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3283d734-fc49-47b7-83c3-e376d236c102"
+      }
+    }
   }
 }
