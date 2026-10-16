@@ -17,7 +17,8 @@
     "expo-system-ui": "~3.0.7",
     "@react-native-community/netinfo": "11.3.1",
     "react-native-google-mobile-ads": "14.7.1",
-    "expo-clipboard": "~6.0.3"
+    "expo-clipboard": "~6.0.3",
+    "react-native-webview": "13.8.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
