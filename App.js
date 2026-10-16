@@ -117,7 +117,7 @@ export default function App() {
     if (!(await checkInternet())) return;
     if (!user.name.trim() || !user.phone.trim() || !user.email.trim()) { Alert.alert('Missing information', 'Please fill all fields'); return; }
     const email = user.email.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) { Alert.alert('Invalid email', 'Enter valid email'); return; }
+    if (!email.includes('@') || !email.includes('.') || email.length < 5) { Alert.alert('Invalid email', 'Enter valid email'); return; }
     const code = String(Math.floor(100000 + Math.random() * 900000));
     setSendingOtp(true);
     try {
@@ -138,7 +138,7 @@ export default function App() {
       setOtpExpiresAt(Date.now() + 10 * 60 * 1000);
       setOtp('');
       setScreen('verify');
-      Alert.alert('Sent!', `Code ya tafi zuwa ${email}`);
+      Alert.alert('Sent!', 'Code ya tafi zuwa ' + email);
     } catch (e) {
       Alert.alert('Email Error', String(e.message).slice(0, 800));
     } finally {
@@ -211,7 +211,7 @@ export default function App() {
   const Banner = () => (<View style={s.banner}><BannerAd unitId={bannerUnitId} size={BannerAdSize.BANNER} requestOptions={{ requestNonPersonalizedAdsOnly: true }} /></View>);
 
   if (screen === 'loading') return (<View style={s.load}><Text style={{ fontSize: 50 }}>👑</Text><Text style={s.logo}>VYRA <Text style={{ color: '#facc15' }}>REWARDS</Text></Text><ActivityIndicator color="#facc15" style={{ marginTop: 16 }} /><VersionTag /></View>);
-  if (screen === 'register') return (<ScrollView contentContainerStyle={s.cont} keyboardShouldPersistTaps="handled"><Text style={s.logo}>VYRA <Text style={{ color: '#facc15' }}>REWARDS</Text></Text><Text style={s.sub}>Welcome • Verify your email</Text><View style={s.card}><Text style={s.lab}>Full name *</Text><TextInput style={s.inp} placeholder="Full name" value={user.name} onChangeText={v => setUser(old => ({...old, name: v }))} /><Text style={s.lab}>Phone *</Text><TextInput style={s.inp} placeholder="080..." keyboardType="phone-pad" value={user.phone} onChangeText={v => setUser(old => ({...old, phone: v }))} /><Text style={s.lab}>Email *</Text><TextInput style={s.inp} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={user.email} onChangeText={v => setUser(old => ({...old, email: v }))} /><TouchableOpacity style={s.yBtn} onPress={createAccount} disabled={sendingOtp}><Text style={s.yTxt}>{sendingOtp ? 'SENDING CODE...' : 'SEND VERIFICATION CODE'}</Text></TouchableOpacity><VersionTag /></View></ScrollView>);
+  if (screen === 'register') return (<ScrollView contentContainerStyle={s.cont} keyboardShouldPersistTaps="handled"><Text style={s.logo}>VYRA <Text style={{ color: '#facc15' }}>REWARDS</Text></Text><Text style={s.sub}>Welcome • Verify your email</Text><View style={s.card}><Text style={s.lab}>Full name *</Text><TextInput style={s.inp} placeholder="Full name" value={user.name} onChangeText={v => setUser(old => ({...old, name: v }))} /><Text style={s.lab}>Phone *</Text><TextInput style={s.inp} placeholder="080..." keyboardType="phone-pad" value={user.phone} onChangeText={v => setUser(old => ({...old, phone: v }))} /><Text style={s.lab}>Email *</Text><TextInput style={s.inp} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={user.email} onChangeText={v => setUser(old => ({...old, email: v.toLowerCase().trim() }))} /><TouchableOpacity style={s.yBtn} onPress={createAccount} disabled={sendingOtp}><Text style={s.yTxt}>{sendingOtp ? 'SENDING CODE...' : 'SEND VERIFICATION CODE'}</Text></TouchableOpacity><VersionTag /></View></ScrollView>);
   if (screen === 'verify') return (<ScrollView contentContainerStyle={s.cont} keyboardShouldPersistTaps="handled"><Text style={s.logo}>EMAIL VERIFICATION</Text><View style={s.card}><Text style={s.sub}>We sent a 6-digit code to {user.email}. Check your inbox and spam folder. The code expires in 10 minutes.</Text><TextInput style={[s.inp, { textAlign: 'center', fontSize: 20, letterSpacing: 6 }]} maxLength={6} keyboardType="number-pad" placeholder="6-digit code" value={otp} onChangeText={setOtp} /><TouchableOpacity style={s.yBtn} onPress={verifyAccount}><Text style={s.yTxt}>VERIFY EMAIL & CONTINUE</Text></TouchableOpacity><TouchableOpacity style={s.secondaryBtn} onPress={() => { setEmailOtp(''); setOtp(''); setScreen('register'); }}><Text style={s.secondaryText}>BACK</Text></TouchableOpacity><VersionTag /></View></ScrollView>);
 
   return (
