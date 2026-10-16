@@ -16,11 +16,67 @@ const BUILD = 6;
 const BANNER_ID = 'ca-app-pub-4487679675698542/5498846987';
 const REWARDED_ID = 'ca-app-pub-4487679675698542/9277117923';
 const INTERSTITIAL_ID = 'ca-app-pub-4487679675698542/7002308379';
-
 // EmailJS client configuration (never put the Private Key in the app).
 const EMAILJS_SERVICE_ID = 'service_eo4mafe';
 const EMAILJS_TEMPLATE_ID = 'template_vla0zff';
 const EMAILJS_PUBLIC_KEY = 'Ee45lolv3ZCjOSWUy';
+
+const createAccount = async () => {
+    if (!(await checkInternet())) return;
+    if (!user.name.trim() || !user.phone.trim() || !user.email.trim()) { 
+        Alert.alert('Missing information', 'Please fill all fields'); 
+        return; 
+    }
+    const email = user.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { 
+        Alert.alert('Invalid email', 'Enter valid email'); 
+        return; 
+    }
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setSendingOtp(true);
+    try {
+      console.log('[EmailJS] Sending to:', email);
+      
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'origin': 'http://localhost' 
+        },
+        body: JSON.stringify({
+          service_id: EMAILJS_SERVICE_ID,
+          template_id: EMAILJS_TEMPLATE_ID,
+          user_id: EMAILJS_PUBLIC_KEY,
+          template_params: {
+            to_email: email,      // <-- WANNAN SHI NE MAFI MUHIMMANCI
+            otp: code,
+            user_name: user.name.trim(),
+            app_name: 'Vyra Rewards'
+          }
+        })
+      });
+
+      const text = await response.text();
+      console.log('EmailJS Status:', response.status, text);
+      
+      if (!response.ok) {
+        throw new Error(text || `EmailJS failed ${response.status}`);
+      }
+      
+      setUser(old => ({ ...old, email }));
+      setEmailOtp(code);
+      setOtpExpiresAt(Date.now() + 10 * 60 * 1000);
+      setOtp('');
+      setScreen('verify');
+      Alert.alert('Sent!', `Code ya tafi zuwa ${email}`);
+      
+    } catch (e) {
+      console.log('EmailJS Error:', e);
+      Alert.alert('Email Error - Dauki screenshot', String(e.message).slice(0, 1000));
+    } finally {
+      setSendingOtp(false);
+    }
+  };
 const bannerUnitId = __DEV__? TestIds.BANNER : BANNER_ID;
 const rewardedUnitId = __DEV__? TestIds.REWARDED : REWARDED_ID;
 const interstitialUnitId = __DEV__? TestIds.INTERSTITIAL : INTERSTITIAL_ID;
