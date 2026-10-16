@@ -12,71 +12,11 @@ import mobileAds, {
 } from 'react-native-google-mobile-ads';
 
 const VERSION = '1.0.5';
-const BUILD = 6;
+const BUILD = 8;
 const BANNER_ID = 'ca-app-pub-4487679675698542/5498846987';
 const REWARDED_ID = 'ca-app-pub-4487679675698542/9277117923';
 const INTERSTITIAL_ID = 'ca-app-pub-4487679675698542/7002308379';
-// EmailJS client configuration (never put the Private Key in the app).
-const EMAILJS_SERVICE_ID = 'service_eo4mafe';
-const EMAILJS_TEMPLATE_ID = 'template_vla0zff';
-const EMAILJS_PUBLIC_KEY = 'Ee45lolv3ZCjOSWUy';
 
-const createAccount = async () => {
-    if (!(await checkInternet())) return;
-    if (!user.name.trim() || !user.phone.trim() || !user.email.trim()) { 
-        Alert.alert('Missing information', 'Please fill all fields'); 
-        return; 
-    }
-    const email = user.email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { 
-        Alert.alert('Invalid email', 'Enter valid email'); 
-        return; 
-    }
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    setSendingOtp(true);
-    try {
-      console.log('[EmailJS] Sending to:', email);
-      
-      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'origin': 'http://localhost' 
-        },
-        body: JSON.stringify({
-          service_id: EMAILJS_SERVICE_ID,
-          template_id: EMAILJS_TEMPLATE_ID,
-          user_id: EMAILJS_PUBLIC_KEY,
-          template_params: {
-            to_email: email,      // <-- WANNAN SHI NE MAFI MUHIMMANCI
-            otp: code,
-            user_name: user.name.trim(),
-            app_name: 'Vyra Rewards'
-          }
-        })
-      });
-
-      const text = await response.text();
-      console.log('EmailJS Status:', response.status, text);
-      
-      if (!response.ok) {
-        throw new Error(text || `EmailJS failed ${response.status}`);
-      }
-      
-      setUser(old => ({ ...old, email }));
-      setEmailOtp(code);
-      setOtpExpiresAt(Date.now() + 10 * 60 * 1000);
-      setOtp('');
-      setScreen('verify');
-      Alert.alert('Sent!', `Code ya tafi zuwa ${email}`);
-      
-    } catch (e) {
-      console.log('EmailJS Error:', e);
-      Alert.alert('Email Error - Dauki screenshot', String(e.message).slice(0, 1000));
-    } finally {
-      setSendingOtp(false);
-    }
-  };
 const bannerUnitId = __DEV__? TestIds.BANNER : BANNER_ID;
 const rewardedUnitId = __DEV__? TestIds.REWARDED : REWARDED_ID;
 const interstitialUnitId = __DEV__? TestIds.INTERSTITIAL : INTERSTITIAL_ID;
@@ -184,15 +124,15 @@ export default function App() {
     }
   };
   const nextQuizQuestion = () => { if (quizIndex < QUIZ_QUESTIONS.length - 1) { setQuizIndex(index => index + 1); setQuizAnswered(false); } else { setScreen('home'); } };
-  const checkInternet = async () => {
-    try { const net = await NetInfo.fetch(); if (!net.isConnected) { Alert.alert('Internet required', 'Please turn on Wi-Fi or mobile data.'); return false; } return true; }
-    catch { Alert.alert('Connection error', 'Could not check internet connection.'); return false; }
-  };
-  const createAccount = async () => {
+  const EMAILJS_SERVICE_ID = 'service_eo4mafe';
+const EMAILJS_TEMPLATE_ID = 'template_vla0zff';
+const EMAILJS_PUBLIC_KEY = 'Ee45lolv3ZCjOSWUy';
+
+const createAccount = async () => {
     if (!(await checkInternet())) return;
-    if (!user.name.trim() || !user.phone.trim() || !user.email.trim()) { Alert.alert('Missing information', 'Please fill in your name, phone number, and email.'); return; }
+    if (!user.name.trim() || !user.phone.trim() || !user.email.trim()) { Alert.alert('Missing information', 'Please fill all fields'); return; }
     const email = user.email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { Alert.alert('Invalid email', 'Please enter a valid email address.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { Alert.alert('Invalid email', 'Enter valid email'); return; }
     const code = String(Math.floor(100000 + Math.random() * 900000));
     setSendingOtp(true);
     try {
@@ -203,43 +143,38 @@ export default function App() {
           service_id: EMAILJS_SERVICE_ID,
           template_id: EMAILJS_TEMPLATE_ID,
           user_id: EMAILJS_PUBLIC_KEY,
-          template_params: {
-            to_email: email,
-            email,
-            user_email: email,
-            user_name: user.name.trim(),
-            otp: code,
-            passcode: code,
-            verification_code: code,
-            app_name: 'Vyra Rewards'
-          }
+          template_params: { to_email: email, otp: code }
         })
       });
-      if (!response.ok) {
-        const detail = await response.text().catch(() => '');
-        throw new Error(detail || `EmailJS request failed (${response.status})`);
-      }
+      const text = await response.text();
+      if (!response.ok) { throw new Error(text); }
       setUser(old => ({ ...old, email }));
       setEmailOtp(code);
       setOtpExpiresAt(Date.now() + 10 * 60 * 1000);
       setOtp('');
       setScreen('verify');
-      Alert.alert('Verification email sent', `We sent a 6-digit code to ${email}. Check your inbox and spam folder.`);
-    } catch (error) {
-      Alert.alert('Could not send code', 'EmailJS could not send the verification code. Check that the template recipient is set to {{to_email}} and that its variables match the app. Then try again.');
+      Alert.alert('Sent!', `Code ya tafi zuwa ${email}`);
+    } catch (e) {
+      Alert.alert('Email Error', String(e.message).slice(0, 800));
     } finally {
       setSendingOtp(false);
     }
   };
-  const verifyAccount = async () => {
-    if (!emailOtp) { Alert.alert('No code sent', 'Please go back and request a verification code.'); return; }
-    if (Date.now() > otpExpiresAt) { setEmailOtp(''); Alert.alert('Code expired', 'The code has expired. Go back and request a new one.'); return; }
-    if (otp.trim() !== emailOtp) { Alert.alert('Incorrect code', 'Enter the 6-digit code sent to your email.'); return; }
+
+const verifyAccount = async () => {
+    if (!emailOtp) { Alert.alert('No code sent', 'Please request code again'); return; }
+    if (Date.now() > otpExpiresAt) { setEmailOtp(''); Alert.alert('Code expired', 'Request new one'); return; }
+    if (otp.trim() !== emailOtp) { Alert.alert('Incorrect code', 'Enter 6-digit code'); return; }
     try {
       await AsyncStorage.setItem('vyra_user', JSON.stringify(user));
       setEmailOtp('');
       setScreen('home');
-    } catch { Alert.alert('Save error', 'Could not save your profile.'); }
+    } catch { Alert.alert('Save error', 'Could not save'); }
+  };
+      
+  const checkInternet = async () => {
+    try { const net = await NetInfo.fetch(); if (!net.isConnected) { Alert.alert('Internet required', 'Please turn on Wi-Fi or mobile data.'); return false; } return true; }
+    catch { Alert.alert('Connection error', 'Could not check internet connection.'); return false; }
   };
   const watchAd = async () => {
     if (!(await checkInternet())) return;
