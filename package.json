@@ -1,11 +1,12 @@
 {
-  "name": "vyra-rewards",
-  "version": "1.0.6",
+  "name": "vyra-rewards-pro",
+  "version": "1.0.7",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
     "prebuild": "expo prebuild",
-    "android": "expo run:android"
+    "android": "expo run:android",
+    "build": "eas build --platform android"
   },
   "dependencies": {
     "expo": "~51.0.28",
@@ -27,4 +28,4 @@
     "@babel/core": "^7.20.0"
   },
   "private": true
-  }
+}
