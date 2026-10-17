@@ -5,11 +5,11 @@ import NetInfo from '@react-native-community/netinfo';
 import CpxOfferwall from './CpxOfferwall';
 import mobileAds, { AdEventType, BannerAd, BannerAdSize, RewardedAd, InterstitialAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, doc, setDoc, collection, addDoc, query, where, getDocs, serverTimestamp, orderBy } from 'firebase/firestore';
 
 const VERSION = '1.0.5';
-const BUILD = 9;
+const BUILD = 10;
 const BANNER_ID = 'ca-app-pub-4487679675698542/5498846987';
 const REWARDED_ID = 'ca-app-pub-4487679675698542/9277117923';
 const INTERSTITIAL_ID = 'ca-app-pub-4487679675698542/7002308379';
@@ -47,8 +47,8 @@ const REAL_OFFERS = [
 const QUIZ_QUESTIONS = [
   { category: 'General Knowledge', question: 'What is the capital city of Nigeria?', options: ['Kano', 'Abuja', 'Lagos', 'Kaduna'], correctIndex: 1 },
   { category: 'Science', question: 'Which planet is known as the Red Planet?', options: ['Venus', 'Jupiter', 'Mars', 'Mercury'], correctIndex: 2 },
-  { category: 'Mathematics', question: 'What is 12 × 8?', options: ['88', '96', '108', '86'], correctIndex: 1 },
-  { category: 'Technology', question: 'Which device is mainly used to type text into a computer?', options: ['Monitor', 'Speaker', 'Keyboard', 'Printer'], correctIndex: 2 },
+  { category: 'Mathematics', question: 'What is 12 x 8?', options: ['88', '96', '108', '86'], correctIndex: 1 },
+  { category: 'Technology', question: 'Which device is mainly used to type text?', options: ['Monitor', 'Speaker', 'Keyboard', 'Printer'], correctIndex: 2 },
   { category: 'History', question: "Who was Nigeria's first President?", options: ['Nnamdi Azikiwe', 'Olusegun Obasanjo', 'Yakubu Gowon', 'Murtala Mohammed'], correctIndex: 0 },
 ];
 
@@ -81,14 +81,47 @@ export default function App() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
-  ser)); setScreen('home'); loadProofs(JSON.parse(savedUser).email); }
-      else setScreen('register');
+
+  const rewardedAd = React.useRef(RewardedAd.createForAdRequest(rewardedUnitId, { requestNonPersonalizedAdsOnly: true })).current;
+  const interstitialAd = React.useRef(InterstitialAd.createForAdRequest(interstitialUnitId, { requestNonPersonalizedAdsOnly: true })).current;
+
+  useEffect(() => {
+    const unsubNet = NetInfo.addEventListener(s => setIsConnected(!!s.isConnected));
+    mobileAds().initialize().then(() => console.log('Ads initialized'));
+    const unsubRewardedLoaded = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => { setRewardedLoaded(true); });
+    const unsubRewardedEarned = rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+      setBonusPoints(b => b+50); setTotalTaps(t => t+1);
+      Alert.alert('Reward!', '+50 Bonus Points');
+    });
+    rewardedAd.load(); interstitialAd.load();
+    loadStorage();
+    return () => { unsubNet(); unsubRewardedLoaded(); unsubRewardedEarned(); };
+  }, []);
+
+  const loadStorage = async () => {
+    try {
+      const savedUser = await AsyncStorage.getItem('user');
+      const savedBonus = await AsyncStorage.getItem('bonusPoints');
+      const savedTaps = await AsyncStorage.getItem('totalTaps');
+      const savedTapCount = await AsyncStorage.getItem('tapCount');
+      const savedQuizBal = await AsyncStorage.getItem('quizBalance');
+      const savedRefCode = await AsyncStorage.getItem('myReferralCode');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setUser(parsed);
+        setScreen('home');
+        loadProofs(parsed.email);
+      } else {
+        setScreen('register');
+      }
       if (savedBonus) setBonusPoints(parseInt(savedBonus));
       if (savedTaps) setTotalTaps(parseInt(savedTaps));
       if (savedTapCount) setTapCount(parseInt(savedTapCount));
       if (savedQuizBal) setQuizBalance(parseInt(savedQuizBal));
       if (savedRefCode) setMyReferralCode(savedRefCode);
-    } catch (e) { setScreen('register'); }
+    } catch (e) {
+      setScreen('register');
+    }
   };
 
   const loadProofs = async (email) => {
@@ -135,7 +168,7 @@ export default function App() {
       setEmailOtp(code);
       setOtpExpiresAt(Date.now() + 10*60*1000);
       setScreen('otp');
-      Alert.alert('Code Sent!', 'Mun tura code zuwa ' + user.email + ' via ' + EMAILJS_SERVICE_ID);
+      Alert.alert('Code Sent!', 'Mun tura code zuwa ' + user.email);
     } catch (e) {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setEmailOtp(code); setOtpExpiresAt(Date.now() + 10*60*1000); setScreen('otp');
@@ -234,11 +267,11 @@ export default function App() {
       <TextInput style={s.input} placeholder="Full Name" value={user.name} onChangeText={t=>setUser({...user, name:t})} />
       <TextInput style={s.input} placeholder="Phone" value={user.phone} onChangeText={t=>setUser({...user, phone:t})} keyboardType="phone-pad" />
       <TextInput style={s.input} placeholder="Email" value={user.email} onChangeText={t=>setUser({...user, email:t})} keyboardType="email-address" autoCapitalize="none" />
-      <TouchableOpacity style={s.yBtn} onPress={handleRegister}><Text style={s.yTxt}>REGISTER + SEND OTP (service_eo4mafe)</Text></TouchableOpacity><VersionTag /></ScrollView>
+      <TouchableOpacity style={s.yBtn} onPress={handleRegister}><Text style={s.yTxt}>REGISTER + SEND OTP</Text></TouchableOpacity><VersionTag /></ScrollView>
   );
 
   if (screen === 'otp') return (
-    <ScrollView contentContainerStyle={s.auth}><Text style={s.authTitle}>Tabbatar da Email - OTP</Text><Text style={{textAlign:'center'}}>Code zuwa {user.email}</Text><Text style={{textAlign:'center', fontSize:12, color:'#888', marginVertical:10}}>Test OTP: {emailOtp} - {EMAILJS_SERVICE_ID}</Text>
+    <ScrollView contentContainerStyle={s.auth}><Text style={s.authTitle}>Tabbatar da Email - OTP</Text><Text style={{textAlign:'center'}}>Code zuwa {user.email}</Text><Text style={{textAlign:'center', fontSize:12, color:'#888', marginVertical:10}}>Test OTP: {emailOtp}</Text>
       <TextInput style={s.input} placeholder="6-digit OTP" value={otp} onChangeText={setOtp} keyboardType="number-pad" maxLength={6} />
       <TouchableOpacity style={s.yBtn} onPress={verifyOtpAndSave}><Text style={s.yTxt}>VERIFY + CREATE FIREBASE REAL USER</Text></TouchableOpacity>
       <TouchableOpacity style={s.secondaryBtn} onPress={()=>{ setEmailOtp(''); setOtp(''); setScreen('register'); }}><Text style={s.secondaryText}>BACK</Text></TouchableOpacity><VersionTag /></ScrollView>
@@ -251,53 +284,53 @@ export default function App() {
         {screen === 'home' && <>
           <View style={s.statRow}><View style={s.statCard}><Text style={s.ml}>BONUS POINTS</Text><Text style={s.mv}>{bonusPoints}</Text></View><View style={s.statCard}><Text style={s.ml}>TOTAL TAPS</Text><Text style={s.mv}>{totalTaps}</Text></View></View>
           <View style={s.tot}><Text style={s.ml}>IN-APP BONUS + REF CODE: {myReferralCode}</Text><Text style={s.balance}>{bonusPoints}</Text></View>
-          <View style={s.prog}><Text style={s.progressText}>{tapCount}/50 taps</Text><View style={[s.progressBar, {width: `${(tapCount/50)*100}%`}]} /></View>
+          <View style={s.prog}><View style={[s.progressBar, {width: `${(tapCount/50)*100}%`}]} /></View>
+          <Text style={s.progressText}>{tapCount}/50 taps</Text>
           <TouchableOpacity style={s.yBtn} onPress={tapForProgress}><Text style={s.yTxt}>TAP FOR PROGRESS</Text></TouchableOpacity>
           <TouchableOpacity style={s.secondaryBtn} onPress={watchAd}><Text style={s.secondaryText}>WATCH AD +50 {rewardedLoaded ? '(Ready)' : '(Loading)'}</Text></TouchableOpacity>
 
-          <Text style={s.sec}>7 REAL OFFERS - EARN 800-1200 Each - Firebase REAL</Text>
+          <Text style={s.sec}>7 REAL OFFERS - EARN 800-1200 Each</Text>
           {REAL_OFFERS.map(offer => (
             <View key={offer.id} style={[s.shop, {borderLeftWidth:4, borderLeftColor: offer.color}]}>
-              <View style={{flex:1}}><Text style={s.itemTitle}>{offer.name} - N{offer.reward}</Text><Text style={s.demoLabel}>Code: {offer.code} - {offer.desc}</Text><Text style={{fontSize:10, color:'#888'}}>{offer.link}</Text></View>
+              <View style={{flex:1}}><Text style={s.itemTitle}>{offer.name} - N{offer.reward}</Text><Text style={s.demoLabel}>Code: {offer.code} - {offer.desc}</Text></View>
               <TouchableOpacity style={[s.secondaryBtn, {marginTop:0, backgroundColor: offer.color}]} onPress={()=>handleJoinOffer(offer)}><Text style={{color:'#fff', fontWeight:'bold'}}>JOIN {offer.code}</Text></TouchableOpacity>
             </View>
           ))}
 
-          {selectedOffer && <View style={s.card}><Text style={s.sec}>Submit Proof for {selectedOffer.name} - {selectedOffer.code}</Text><TextInput style={[s.input, {height:80}]} placeholder="Example: I registered with PalmPay NSFM3287, username @xyz, funded 500" value={proofText} onChangeText={setProofText} multiline /><TouchableOpacity style={s.yBtn} onPress={submitProof}><Text style={s.yTxt}>SUBMIT PROOF - GET {selectedOffer.reward}</Text></TouchableOpacity></View>}
+          {selectedOffer && <View style={s.card}><Text style={s.sec}>Submit Proof for {selectedOffer.name}</Text><TextInput style={[s.input, {height:80}]} placeholder="Proof..." value={proofText} onChangeText={setProofText} multiline /><TouchableOpacity style={s.yBtn} onPress={submitProof}><Text style={s.yTxt}>SUBMIT PROOF - GET {selectedOffer.reward}</Text></TouchableOpacity></View>}
 
-          <Text style={s.sec}>MY PROOFS - {proofs.length} - Firebase REAL</Text>
+          <Text style={s.sec}>MY PROOFS - {proofs.length}</Text>
           {proofs.map(p => <View key={p.id} style={s.shop}><Text style={s.itemTitle}>{p.offerName} - {p.offerCode}</Text><Text style={s.demoLabel}>{p.status} - N{p.reward}</Text></View>)}
 
-          <View style={s.card}><Text style={s.sec}>WITHDRAW - Min 1000 - Firebase</Text><TextInput style={s.input} placeholder="Amount" value={withdrawAmount} onChangeText={setWithdrawAmount} keyboardType="numeric" /><TextInput style={s.input} placeholder="Bank Name e.g PalmPay" value={bankName} onChangeText={setBankName} /><TextInput style={s.input} placeholder="Account Number" value={accountNumber} onChangeText={setAccountNumber} keyboardType="numeric" /><TouchableOpacity style={s.yBtn} onPress={handleWithdraw}><Text style={s.yTxt}>WITHDRAW NOW</Text></TouchableOpacity></View>
+          <View style={s.card}><Text style={s.sec}>WITHDRAW - Min 1000</Text><TextInput style={s.input} placeholder="Amount" value={withdrawAmount} onChangeText={setWithdrawAmount} keyboardType="numeric" /><TextInput style={s.input} placeholder="Bank Name" value={bankName} onChangeText={setBankName} /><TextInput style={s.input} placeholder="Account Number" value={accountNumber} onChangeText={setAccountNumber} keyboardType="numeric" /><TouchableOpacity style={s.yBtn} onPress={handleWithdraw}><Text style={s.yTxt}>WITHDRAW NOW</Text></TouchableOpacity></View>
 
-          <TouchableOpacity style={s.abf} onPress={()=>setScreen('cpx')}><Text style={s.abt}>CPX RESEARCH - REAL SURVEYS (Not Destroyed!)</Text></TouchableOpacity>
-          <TouchableOpacity style={s.abf} onPress={()=>setScreen('quiz')}><Text style={s.abt}>VYRA QUIZ - Earn 10 per Q</Text></TouchableOpacity>
+          <TouchableOpacity style={s.abf} onPress={()=>setScreen('cpx')}><Text style={s.abt}>CPX RESEARCH - REAL SURVEYS</Text></TouchableOpacity>
+          <TouchableOpacity style={s.abf} onPress={()=>setScreen('quiz')}><Text style={s.abt}>VYRA QUIZ</Text></TouchableOpacity>
           <TouchableOpacity style={s.abf} onPress={()=>setScreen('tasks')}><Text style={s.abt}>ALL OFFERS + TASKS</Text></TouchableOpacity>
-          <TouchableOpacity style={s.abf} onPress={()=>setScreen('wallet')}><Text style={s.abt}>REWARDS STATUS - Balance {bonusPoints}</Text></TouchableOpacity>
+          <TouchableOpacity style={s.abf} onPress={()=>setScreen('wallet')}><Text style={s.abt}>REWARDS STATUS</Text></TouchableOpacity>
           <TouchableOpacity style={s.abf} onPress={()=>setScreen('settings')}><Text style={s.abt}>SETTINGS - v{VERSION}</Text></TouchableOpacity>
           <Banner />
         </>}
 
         {screen === 'cpx' && <>
-          <Text style={s.sec}>CPX RESEARCH - REAL SURVEYS - Not Destroyed!</Text>
+          <Text style={s.sec}>CPX RESEARCH - REAL SURVEYS</Text>
           <View style={{flex:1, height:700, backgroundColor:'#fff', borderRadius:12, overflow:'hidden'}}><CpxOfferwall user={user} /></View>
           <TouchableOpacity style={s.secondaryBtn} onPress={()=>setScreen('home')}><Text style={s.secondaryText}>BACK TO HOME</Text></TouchableOpacity>
         </>}
+        {screen === 'quiz' && <><Text style={s.sec}>VYRA QUIZ</Text>{!quizFinished ? <View style={s.card}><Text style={s.progressText}>Question {quizIndex+1}/{QUIZ_QUESTIONS.length}</Text><Text style={s.question}>{QUIZ_QUESTIONS[quizIndex].question}</Text>{QUIZ_QUESTIONS[quizIndex].options.map((option, index) => <TouchableOpacity key={option} disabled={quizAnswered} style={[s.option, quizAnswered && index===QUIZ_QUESTIONS[quizIndex].correctIndex && s.correct, quizAnswered && index!==QUIZ_QUESTIONS[quizIndex].correctIndex && s.correct, quizAnswered && index!==QUIZ_QUESTIONS[quizIndex].correctIndex && s.wrong]} onPress={()=>handleQuizAnswer(index)}><Text>{option}</Text></TouchableOpacity>)}<Text style={{marginTop:10}}>Score: {quizScore}</Text></View> : <View style={s.card}><Text style={s.question}>Finished! Score {quizScore}</Text><TouchableOpacity style={s.yBtn} onPress={()=>{ setQuizIndex(0); setQuizScore(0); setQuizFinished(false); setQuizAnswered(false); setScreen('home'); }}><Text style={s.yTxt}>BACK TO HOME</Text></TouchableOpacity></View>}</>}
 
-        {screen === 'quiz' && <><Text style={s.sec}>🧠 VYRA QUIZ</Text>{!quizFinished ? <View style={s.card}><Text style={s.progressText}>Question {quizIndex+1}/{QUIZ_QUESTIONS.length}</Text><Text style={s.question}>{QUIZ_QUESTIONS[quizIndex].question}</Text>{QUIZ_QUESTIONS[quizIndex].options.map((option, index) => <TouchableOpacity key={option} disabled={quizAnswered} style={[s.option, quizAnswered && index===QUIZ_QUESTIONS[quizIndex].correctIndex && s.correct, quizAnswered && index!==QUIZ_QUESTIONS[quizIndex].correctIndex && s.wrong]} onPress={()=>handleQuizAnswer(index)}><Text>{option}</Text></TouchableOpacity>)}<Text style={{marginTop:10}}>Score: {quizScore} Balance: {quizBalance}</Text></View> : <View style={s.card}><Text style={s.question}>Finished! Score {quizScore}/{QUIZ_QUESTIONS.length}</Text><TouchableOpacity style={s.yBtn} onPress={()=>{ setQuizIndex(0); setQuizScore(0); setQuizFinished(false); setQuizAnswered(false); setScreen('home'); }}><Text style={s.yTxt}>BACK TO HOME</Text></TouchableOpacity></View>}</>}
+        {screen === 'tasks' && <><Text style={s.sec}>REFERRALS & OFFERS - 7 REAL</Text>{REAL_OFFERS.map(offer => <View key={offer.id} style={s.shop}><View style={{flex:1}}><Text style={s.itemTitle}>{offer.name} - {offer.code}</Text><Text style={s.demoLabel}>Reward N{offer.reward}</Text></View><TouchableOpacity style={[s.secondaryBtn, {marginTop:0}]} onPress={()=>handleJoinOffer(offer)}><Text style={s.secondaryText}>JOIN</Text></TouchableOpacity></View>)}<TouchableOpacity style={s.secondaryBtn} onPress={()=>setScreen('home')}><Text style={s.secondaryText}>BACK TO HOME</Text></TouchableOpacity></>}
 
-        {screen === 'tasks' && <><Text style={s.sec}>REFERRALS & OFFERS - 7 REAL + Tasks</Text>{REAL_OFFERS.map(offer => <View key={offer.id} style={s.shop}><View style={{flex:1}}><Text style={s.itemTitle}>{offer.name} - {offer.code}</Text><Text style={s.demoLabel}>Reward N{offer.reward} - REAL LINK</Text></View><TouchableOpacity style={[s.secondaryBtn, {marginTop:0}]} onPress={()=>handleJoinOffer(offer)}><Text style={s.secondaryText}>JOIN</Text></TouchableOpacity></View>)}<TouchableOpacity style={s.secondaryBtn} onPress={()=>setScreen('home')}><Text style={s.secondaryText}>BACK TO HOME</Text></TouchableOpacity></>}
-
-        {screen === 'wallet' && <><Text style={s.sec}>REWARDS STATUS - Firebase REAL</Text><View style={s.card}><Text style={s.question}>Bonus Points: {bonusPoints} - Total Taps: {totalTaps} - Quiz Balance: {quizBalance}</Text><Text style={s.question}>Referral Code: {myReferralCode} - Share to earn 300</Text><Text style={s.question}>Email: {user.email} - Name: {user.name}</Text><TextInput style={s.input} placeholder="Amount Min 1000" value={withdrawAmount} onChangeText={setWithdrawAmount} keyboardType="numeric" /><TextInput style={s.input} placeholder="Bank Name" value={bankName} onChangeText={setBankName} /><TextInput style={s.input} placeholder="Account Number" value={accountNumber} onChangeText={setAccountNumber} keyboardType="numeric" /><TouchableOpacity style={s.yBtn} onPress={handleWithdraw}><Text style={s.yTxt}>WITHDRAW {withdrawAmount || ''}</Text></TouchableOpacity></View><TouchableOpacity style={s.secondaryBtn} onPress={()=>setScreen('home')}><Text style={s.secondaryText}>BACK TO HOME</Text></TouchableOpacity></>}
+        {screen === 'wallet' && <><Text style={s.sec}>REWARDS STATUS</Text><View style={s.card}><Text style={s.question}>Bonus Points: {bonusPoints}</Text><Text style={s.question}>Referral Code: {myReferralCode}</Text><TextInput style={s.input} placeholder="Amount Min 1000" value={withdrawAmount} onChangeText={setWithdrawAmount} keyboardType="numeric" /><TextInput style={s.input} placeholder="Bank Name" value={bankName} onChangeText={setBankName} /><TextInput style={s.input} placeholder="Account Number" value={accountNumber} onChangeText={setAccountNumber} keyboardType="numeric" /><TouchableOpacity style={s.yBtn} onPress={handleWithdraw}><Text style={s.yTxt}>WITHDRAW</Text></TouchableOpacity></View><TouchableOpacity style={s.secondaryBtn} onPress={()=>setScreen('home')}><Text style={s.secondaryText}>BACK TO HOME</Text></TouchableOpacity></>}
 
         {screen === 'settings' && <>
-          <Text style={s.sec}>⚙️ SETTINGS - B da Setting - Not Destroyed!</Text>
+          <Text style={s.sec}>SETTINGS - B da Setting - Not Destroyed!</Text>
           <View style={s.card}>
             <View style={s.settingItem}><Text style={s.settingText}>🔔 Notifications</Text><Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} /></View>
             <View style={s.settingItem}><Text style={s.settingText}>🔊 Sound</Text><Switch value={soundEnabled} onValueChange={setSoundEnabled} /></View>
             <Text style={s.settingText}>📧 EmailJS: {EMAILJS_SERVICE_ID} - {EMAILJS_TEMPLATE_ID}</Text>
-            <Text style={s.settingText}>🔥 Firebase: vyra-rewards-pro - REAL Config</Text>
-                     <Text style={s.settingText}>📶 Connection: {isConnected ? 'Online' : 'Offline'}</Text>
+            <Text style={s.settingText}>🔥 Firebase: vyra-rewards-pro - REAL Config - apiKey Ai...Tn6w</Text>
+            <Text style={s.settingText}>📶 Connection: {isConnected ? 'Online' : 'Offline'}</Text>
             <Text style={s.settingText}>👤 User: {user.name} - {user.email}</Text>
             <Text style={s.settingText}>🎫 My Referral: {myReferralCode}</Text>
             <TouchableOpacity style={s.settingItem} onPress={()=>Alert.alert('Terms', 'Vyra Rewards Pro - Earn via offers')}><Text style={s.settingText}>📄 Terms of Service</Text></TouchableOpacity>
