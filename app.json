@@ -8,8 +8,7 @@
     "android": {
       "package": "com.vyrarewards.earn",
       "versionCode": 11,
-      "permissions": ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"],
-      "googleServicesFile": "./google-services.json"
+      "permissions": ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"]
     },
     "platforms": ["android"],
     "splash": {
