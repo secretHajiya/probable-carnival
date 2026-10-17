@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, StyleSheet, ActivityIndicator, Switch, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -10,11 +10,10 @@ import { getFirestore, doc, setDoc, collection, addDoc, query, where, getDocs, s
 
 const VERSION = '1.0.7';
 const BUILD = 12;
-// SABABBIN REAL ADS - 5672 - NA CIRE TSOFAFFIN 4487
 const BANNER_ID = 'ca-app-pub-567288772229131/5819855709';
 const REWARDED_ID = 'ca-app-pub-567288772229131/8254487351';
 const INTERSTITIAL_ID = 'ca-app-pub-567288772229131/2783677985';
-const APP_ID = 'ca-app-pub-567288772229131~8278538087';
+
 const bannerUnitId = __DEV__ ? TestIds.BANNER : BANNER_ID;
 const rewardedUnitId = __DEV__ ? TestIds.REWARDED : REWARDED_ID;
 const interstitialUnitId = __DEV__ ? TestIds.INTERSTITIAL : INTERSTITIAL_ID;
