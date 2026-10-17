@@ -2,18 +2,35 @@
   "expo": {
     "name": "Vyra Rewards Pro",
     "slug": "vyra-rewards-pro",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "android": {
-      "package": "com.vyrarewards.earn",
-      "versionCode": 11,
-      "permissions": ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"]
-    },
-    "platforms": ["android"],
+    "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#09090f",
-      "resizeMode": "contain"
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#6a00f4"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6a00f4"
+      },
+      "package": "com.vyrarewards.earn",
+      "versionCode": 12,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       [
@@ -24,10 +41,6 @@
         }
       ]
     ],
-    "react-native-google-mobile-ads": {
-      "android_app_id": "ca-app-pub-567288772229131~8278538087",
-      "ios_app_id": "ca-app-pub-567288772229131~8278538087"
-    },
     "owner": "vyrarewardspros-team",
     "extra": {
       "eas": {
