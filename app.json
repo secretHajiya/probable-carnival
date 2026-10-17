@@ -1,14 +1,15 @@
 {
   "expo": {
-    "name": "Vyra Rewards",
+    "name": "Vyra Rewards Pro",
     "slug": "vyra-rewards-pro",
     "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.vyrarewards.earn",
-      "versionCode": 8,
-      "permissions": ["android.permission.INTERNET"]
+      "versionCode": 11,
+      "permissions": ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"],
+      "googleServicesFile": "./google-services.json"
     },
     "platforms": ["android"],
     "splash": {
@@ -16,8 +17,18 @@
       "resizeMode": "contain"
     },
     "plugins": [
-      ["react-native-google-mobile-ads", {"androidAppId": "ca-app-pub-4487679675698542~3146823846"}]
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-567288772229131~8278538087",
+          "iosAppId": "ca-app-pub-567288772229131~8278538087"
+        }
+      ]
     ],
+    "react-native-google-mobile-ads": {
+      "android_app_id": "ca-app-pub-567288772229131~8278538087",
+      "ios_app_id": "ca-app-pub-567288772229131~8278538087"
+    },
     "owner": "vyrarewardspros-team",
     "extra": {
       "eas": {
