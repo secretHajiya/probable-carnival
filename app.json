@@ -1,10 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet, Linking, ActivityIndicator, Image } from 'react-native';
+import { View } from 'react-native';
+import { Text } from 'react-native';
+import { TextInput } from 'react-native';
+import { TouchableOpacity } from 'react-native';
+import { ScrollView } from 'react-native';
+import { Alert } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Linking } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import NetInfo from '@react-native-community/netinfo';
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, serverTimestamp, onSnapshot, orderBy } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
+import { setDoc } from 'firebase/firestore';
+import { getDoc } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
+import { addDoc } from 'firebase/firestore';
+import { query } from 'firebase/firestore';
+import { where } from 'firebase/firestore';
+import { getDocs } from 'firebase/firestore';
+import { updateDoc } from 'firebase/firestore';
+import { serverTimestamp } from 'firebase/firestore';
+import { orderBy } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyA1p2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q",
@@ -20,15 +43,14 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const OFFERS = [
-  { id: '1', name: 'PalmPay', reward: 800, code: 'NSFM3287', link: 'https://app.palmpay.com/invite/NSFM3287', color: '#6a00f4', desc: 'Register + Fund ₦500, get ₦800' },
-  { id: '2', name: 'Opay', reward: 1000, code: 'OPAYVYRA', link: 'https://opay.com/join/OPAYVYRA', color: '#00c853', desc: 'Register + KYC + Fund' },
-  { id: '3', name: 'Moniepoint', reward: 1200, code: 'MONIEVYRA', link: 'https://moniepoint.com/refer/MONIEVYRA', color: '#0d47a1', desc: 'Business account + Transaction' },
-  { id: '4', name: 'FairMoney', reward: 900, code: 'FAIRVYRA', link: 'https://fairmoney.io/r/FAIRVYRA', color: '#ff6f00', desc: 'Loan app install + Register' },
-    { id: '5', name: 'Carbon', reward: 850, code: 'CARBONVYRA', link: 'https://getcarbon.co/invite/CARBONVYRA', color: '#212121', desc: 'Register + BVN + Fund' },
-  { id: '6', name: 'Branch', reward: 700, code: 'BRANCHVYRA', link: 'https://branch.com.ng/a/BRANCHVYRA', color: '#1e88e5', desc: 'Install + Register + Loan check' },
-  { id: '7', name: 'Kuda', reward: 1100, code: 'KUDAVYRA', link: 'https://kuda.com/join/KUDAVYRA', color: '#4a148c', desc: 'Register + Fund ₦1000' },
-];
-
+  { id: '1', name: 'PalmPay', reward: 800, code: 'NSFM3287', link: 'https://app.palmpay.com/invite/NSFM3287', color: '#6a00f4', desc: 'Register + Fund 500' },
+  { id: '2', name: 'Opay', reward: 1000, code: 'OPAYVYRA', link: 'https://opay.com/join/OPAYVYRA', color: '#00c853', desc: 'Register + KYC' },
+  { id: '3', name: 'Moniepoint', reward: 1200, code: 'MONIEVYRA', link: 'https://moniepoint.com/refer/MONIEVYRA', color: '#0d47a1', desc: 'Business account' },
+  { id: '4', name: 'FairMoney', reward: 900, code: 'FAIRVYRA', link: 'https://fairmoney.io/r/FAIRVYRA', color: '#ff6f00', desc: 'Install + Register' },
+  { id: '5', name: 'Carbon', reward: 850, code: 'CARBONVYRA', link: 'https://getcarbon.co/invite/CARBONVYRA', color: '#212121', desc: 'Register + BVN' },
+  { id: '6', name: 'Branch', reward: 700, code: 'BRANCHVYRA', link: 'https://branch.com.ng/a/BRANCHVYRA', color: '#1e88e5', desc: 'Install + Loan check' },
+  { id: '7', name: 'Kuda', reward: 1100, code: 'KUDAVYRA', link: 'https://kuda.com/join/KUDAVYRA', color: '#4a148c', desc: 'Register + Fund 1000' },
+]; 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,6 +108,7 @@ export default function App() {
       setProofs(list);
     } catch (e) { console.log(e); }
   };
+
   const loadLeaderboard = async () => {
     try {
       const q = query(collection(db, 'users'), orderBy('totalEarned', 'desc'));
@@ -99,7 +122,6 @@ export default function App() {
   const generateReferralCode = () => {
     return 'VYRA' + Math.random().toString(36).substring(2, 8).toUpperCase();
   };
-
   const saveUserToFirestore = async (u, bonus = 0, refCodeInput = '') => {
     try {
       let refBonus = 0;
@@ -139,7 +161,7 @@ export default function App() {
   };
 
   const handleSignup = async () => {
-    if (!email || !password || !username) { Alert.alert('Error', 'Cika komai'); return; }
+    if (!email || !password || !username) { Alert.alert('Error', 'Please fill all fields'); return; }
     try {
       setLoading(true);
       const cred = await createUserWithEmailAndPassword(auth, email, password);
@@ -150,7 +172,7 @@ export default function App() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) { Alert.alert('Error', 'Cika email da password'); return; }
+    if (!email || !password) { Alert.alert('Error', 'Please enter email and password'); return; }
     try {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
@@ -165,8 +187,8 @@ export default function App() {
   };
 
   const submitProof = async () => {
-    if (!proofText || !selectedOffer) { Alert.alert('Error', 'Rubuta proof'); return; }
-    if (!user) { Alert.alert('Error', 'Login da farko'); return; }
+    if (!proofText || !selectedOffer) { Alert.alert('Error', 'Please enter proof details'); return; }
+    if (!user) { Alert.alert('Error', 'Please login first'); return; }
     try {
       setLoading(true);
       await addDoc(collection(db, 'referral_proofs'), {
@@ -187,18 +209,19 @@ export default function App() {
       });
       setBalance(b => b + 50);
       setTotalEarned(t => t + 50);
-      Alert.alert('Success', 'Proof an aika! Za a duba shi cikin 24h. Ka samu ₦50 bonus!');
+      Alert.alert('Success', 'Proof submitted! Will be reviewed in 24h. You got 50 bonus!');
       setShowOfferwall(false);
       setProofText('');
       loadUserData(user.uid);
     } catch (e) { Alert.alert('Error', e.message); }
     finally { setLoading(false); }
   };
+
   const handleWithdraw = async () => {
-    if (!withdrawAmount || !bankName || !accountNumber) { Alert.alert('Error', 'Cika komai'); return; }
+    if (!withdrawAmount || !bankName || !accountNumber) { Alert.alert('Error', 'Please fill all fields'); return; }
     const amt = parseInt(withdrawAmount);
-    if (amt < 1000) { Alert.alert('Error', 'Minimum withdrawal ₦1000'); return; }
-    if (amt > balance) { Alert.alert('Error', 'Balance bai isa ba'); return; }
+    if (amt < 1000) { Alert.alert('Error', 'Minimum withdrawal is 1000'); return; }
+    if (amt > balance) { Alert.alert('Error', 'Insufficient balance'); return; }
     try {
       setLoading(true);
       await addDoc(collection(db, 'withdrawals'), {
@@ -213,7 +236,7 @@ export default function App() {
       });
       await updateDoc(doc(db, 'users', user.uid), { balance: balance - amt });
       setBalance(b => b - amt);
-      Alert.alert('Success', 'Withdrawal request sent! Za a biya cikin 24h');
+      Alert.alert('Success', 'Withdrawal request sent! Will be paid in 24h');
       setWithdrawAmount(''); setBankName(''); setAccountNumber('');
     } catch (e) { Alert.alert('Error', e.message); }
     finally { setLoading(false); }
@@ -233,8 +256,8 @@ export default function App() {
   if (!isConnected) {
     return (
       <View style={styles.center}>
-        <Text style={{fontSize:18, fontWeight:'bold'}}>No Internet</Text>
-        <Text>Bude Data ka</Text>
+        <Text style={{fontSize:18, fontWeight:'bold'}}>No Internet Connection</Text>
+        <Text>Please check your data</Text>
       </View>
     );
   }
@@ -244,15 +267,15 @@ export default function App() {
       <ScrollView contentContainerStyle={styles.onboard}>
         <Text style={styles.logo}>VYRA</Text>
         <Text style={styles.subLogo}>REWARDS</Text>
-        <Text style={styles.tag}>Earn ₦5000 Daily - 7 Real Offers</Text>
+        <Text style={styles.tag}>Earn 5000 Daily - 7 Real Offers</Text>
         <View style={styles.card}>
-          <Text style={styles.cardText}>✓ PalmPay NSFM3287 - ₦800</Text>
-          <Text style={styles.cardText}>✓ Opay, Moniepoint, FairMoney</Text>
-          <Text style={styles.cardText}>✓ Carbon, Branch, Kuda</Text>
-          <Text style={styles.cardText}>✓ Instant Withdrawal to Bank</Text>
+          <Text style={styles.cardText}>- PalmPay NSFM3287 - 800</Text>
+          <Text style={styles.cardText}>- Opay, Moniepoint, FairMoney</Text>
+          <Text style={styles.cardText}>- Carbon, Branch, Kuda</Text>
+          <Text style={styles.cardText}>- Instant Bank Withdrawal</Text>
         </View>
         <TouchableOpacity style={styles.btnPrimary} onPress={()=>setCurrentScreen('auth')}>
-          <Text style={styles.btnText}>FARA EARN YANZU</Text>
+          <Text style={styles.btnText}>START EARNING NOW</Text>
         </TouchableOpacity>
         <StatusBar style="auto" />
       </ScrollView>
@@ -268,7 +291,7 @@ export default function App() {
         <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
         <TextInput style={styles.input} placeholder="Referral Code (optional)" value={referralCode} onChangeText={setReferralCode} autoCapitalize="characters" />
         <TouchableOpacity style={styles.btnPrimary} onPress={handleSignup}>
-          <Text style={styles.btnText}>SIGNUP + ₦100 BONUS</Text>
+          <Text style={styles.btnText}>SIGNUP + 100 BONUS</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.btnSecondary} onPress={handleLogin}>
           <Text style={styles.btnText2}>LOGIN</Text>
@@ -282,11 +305,11 @@ export default function App() {
     return (
       <View style={styles.container}>
         <Text style={styles.offerTitle}>{selectedOffer.name} Proof</Text>
-        <Text style={{margin:10}}>Ka bude link: {selectedOffer.code}</Text>
-        <Text style={{margin:10, color:'green'}}>Yi register da code: {selectedOffer.code} - Sannan ka dawo ka rubuta proof</Text>
-        <TextInput style={[styles.input, {height:100}]} placeholder="Misali: Na yi register da PalmPay, username dina @xyz, na funding 500. Screenshot..." value={proofText} onChangeText={setProofText} multiline />
+        <Text style={{margin:10}}>You opened: {selectedOffer.code}</Text>
+        <Text style={{margin:10, color:'green'}}>Register with code: {selectedOffer.code} - Then return and submit proof</Text>
+        <TextInput style={[styles.input, {height:100}]} placeholder="Example: I registered with PalmPay, my username @xyz, I funded 500. Screenshot..." value={proofText} onChangeText={setProofText} multiline />
         <TouchableOpacity style={styles.btnPrimary} onPress={submitProof}>
-          <Text style={styles.btnText}>SUBMIT PROOF - GET ₦{selectedOffer.reward}</Text>
+          <Text style={styles.btnText}>SUBMIT PROOF - GET {selectedOffer.reward}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.btnSecondary} onPress={()=>setShowOfferwall(false)}>
           <Text style={styles.btnText2}>BACK TO OFFERS</Text>
@@ -301,22 +324,22 @@ export default function App() {
         <View>
           <Text style={{color:'#fff', fontSize:12}}>Welcome</Text>
           <Text style={{color:'#fff', fontSize:18, fontWeight:'bold'}}>{username || 'User'} - {myReferralCode}</Text>
-          <Text style={{color:'#ffd700', fontSize:16, fontWeight:'bold'}}>Balance: ₦{balance}</Text>
+          <Text style={{color:'#ffd700', fontSize:16, fontWeight:'bold'}}>Balance: N{balance}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout}><Text style={{color:'#fff'}}>Logout</Text></TouchableOpacity>
       </View>
 
       <View style={styles.balanceCard}>
-        <Text style={{fontWeight:'bold'}}>Total Earned: ₦{totalEarned}</Text>
-        <Text>Referral Code: {myReferralCode} - Share ka samu ₦300</Text>
+        <Text style={{fontWeight:'bold'}}>Total Earned: N{totalEarned}</Text>
+        <Text>Referral Code: {myReferralCode} - Share to get 300</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>7 REAL OFFERS - EARN ₦800-₦1200 Each</Text>
+      <Text style={styles.sectionTitle}>7 REAL OFFERS - EARN 800-1200 Each</Text>
       {OFFERS.map(offer => (
         <View key={offer.id} style={[styles.offerCard, {borderLeftColor: offer.color}]}>
           <View style={{flexDirection:'row', justifyContent:'space-between'}}>
             <Text style={{fontWeight:'bold', fontSize:16}}>{offer.name}</Text>
-            <Text style={{backgroundColor: offer.color, color:'#fff', paddingHorizontal:8, borderRadius:4}}>₦{offer.reward}</Text>
+            <Text style={{backgroundColor: offer.color, color:'#fff', paddingHorizontal:8, borderRadius:4}}>N{offer.reward}</Text>
           </View>
           <Text style={{fontSize:12, color:'#555', marginTop:4}}>Code: {offer.code} - {offer.desc}</Text>
           <TouchableOpacity style={[styles.btnSmall, {backgroundColor: offer.color}]} onPress={()=>handleJoinOffer(offer)}>
@@ -328,12 +351,12 @@ export default function App() {
       <Text style={styles.sectionTitle}>My Proofs - {proofs.length}</Text>
       {proofs.map(p => (
         <View key={p.id} style={styles.proofCard}>
-          <Text style={{fontWeight:'bold'}}>{p.offerName} - {p.offerCode} - ₦{p.reward}</Text>
-          <Text style={{fontSize:12}}>Status: {p.status} - {p.proof?.substring(0,50)}</Text>
+          <Text style={{fontWeight:'bold'}}>{p.offerName} - {p.offerCode} - N{p.reward}</Text>
+          <Text style={{fontSize:12}}>Status: {p.status}</Text>
         </View>
       ))}
 
-      <Text style={styles.sectionTitle}>Withdraw - Min ₦1000</Text>
+      <Text style={styles.sectionTitle}>Withdraw - Min 1000</Text>
       <View style={{padding:15}}>
         <TextInput style={styles.input} placeholder="Amount (e.g 1500)" value={withdrawAmount} onChangeText={setWithdrawAmount} keyboardType="numeric" />
         <TextInput style={styles.input} placeholder="Bank Name (e.g PalmPay)" value={bankName} onChangeText={setBankName} />
@@ -347,7 +370,7 @@ export default function App() {
       {leaderboard.map((u,i) => (
         <View key={i} style={styles.leaderRow}>
           <Text>{i+1}. {u.username}</Text>
-          <Text>₦{u.totalEarned}</Text>
+          <Text>N{u.totalEarned}</Text>
         </View>
       ))}
       <View style={{height:80}} />
