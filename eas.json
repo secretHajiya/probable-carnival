@@ -8,11 +8,20 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "cache": {
+        "disabled": true
       }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "cache": {
+        "disabled": true
+      },
+      "env": {
+        "EXPO_NO_DOTENV": "1"
       }
     }
   }
