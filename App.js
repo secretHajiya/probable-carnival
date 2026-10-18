@@ -310,11 +310,11 @@ export default function App() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>CPX Research Surveys - Earn Extra</Text>
-          <CpxOfferwall />
+          {CpxOfferwall ? <CpxOfferwall user={user} /> : null}
         </View>
 
         <View style={{alignItems: 'center', marginVertical: 10}}>
-          <BannerAd unitId={bannerUnitId} size={BannerAdSize.BANNER} />
+          {isConnected ? <BannerAd unitId={bannerUnitId} size={BannerAdSize.BANNER} /> : null}
         </View>
 
         <Text style={styles.sec}>WALLET - 7 Withdraw Methods - Min 200k = 5k Naira</Text>
