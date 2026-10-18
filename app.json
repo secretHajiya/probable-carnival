@@ -1,48 +1,49 @@
 {
-  "name": "Vyra Rewards Pro",
-  "slug": "vyra-rewards",
-  "version": "1.0.7",
-  "orientation": "portrait",
-  "icon": "./assets/icon.png",
-  "userInterfaceStyle": "light",
-  "splash": {
-    "image": "./assets/icon.png",
-    "resizeMode": "contain",
-    "backgroundColor": "#6a00f4"
-  },
-  "assetBundlePatterns": [
-    "**/*"
-  ],
-  "android": {
-    "adaptiveIcon": {
-      "foregroundImage": "./assets/icon.png",
+  "expo": {
+    "name": "Vyra Rewards Pro",
+    "slug": "vyra-rewards",
+    "version": "1.0.7",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
       "backgroundColor": "#6a00f4"
     },
-    "package": "com.vyrarewards.earn",
-    "versionCode": 12,
-    "permissions": [
-      "android.permission.INTERNET",
-      "android.permission.ACCESS_NETWORK_STATE"
-    ]
-  },
-  "plugins": [
-    [
-      "react-native-google-mobile-ads",
-      {
-        "androidAppId": "ca-app-pub-567288772229131~8278538087",
-        "iosAppId": "ca-app-pub-567288772229131~8278538087"
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#6a00f4"
+      },
+      "package": "com.vyrarewards.earn",
+      "versionCode": 13,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "com.google.android.gms.permission.AD_ID"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.vyrarewards.earn"
+    },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-567288772229131~8278538087",
+          "iosAppId": "ca-app-pub-567288772229131~8278538087"
+        }
+      ]
+    ],
+    "owner": "secretmadabos-team",
+    "extra": {
+      "eas": {
+        "projectId": "1e622ff8-fa4d-40d5-9606-20f79ddfcc6f"
       }
-    ]
-  ],
-  "owner": "secretmadabos-team",
-  "extra": {
-    "eas": {
-      "projectId": "1e622ff8-fa4d-40d5-9606-20f79ddfcc6f"
-    }
-  },
-  "sdkVersion": "51.0.0",
-  "platforms": [
-    "ios",
-    "android"
-  ]
+    },
+    "sdkVersion": "51.0.0",
+    "platforms": ["ios", "android"]
+  }
 }
