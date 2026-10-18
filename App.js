@@ -11,7 +11,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } f
 import { getFirestore, doc, setDoc, collection, addDoc, query, where, getDocs, serverTimestamp, orderBy, getDoc, updateDoc } from 'firebase/firestore';
 
 const VERSION = '1.0.7'; const BUILD = 13;
-const BANNER_ID = 'ca-app-pub-567288772229131/5819855709';
+const BANNER_ID = 'ca-app-pub-567288772229131/5819895709';
 const REWARDED_ID = 'ca-app-pub-567288772229131/8254487351';
 const INTERSTITIAL_ID = 'ca-app-pub-567288772229131/2783677985';
 const bannerUnitId = __DEV__ ? TestIds.BANNER : BANNER_ID;
@@ -53,7 +53,7 @@ const APP_THEMES = [
   { name: 'Sunset Orange', primary: '#e65100', secondary: '#ffcc80' },
   { name: 'Dark Mode', primary: '#212121', secondary: '#424242' },
 ];
-const TERMS_TEXT = `Terms of Service - Vyra Rewards Pro - v1.0.7 - Contact: vyraprosupport@gmail.com - Earn via CPX`;
+const TERMS_TEXT = `Terms of Service - Vyra Rewards Pro - v1.0.8 - Contact: vyraprosupport@gmail.com - Earn via CPX`;
 const PRIVACY_TEXT = `Privacy Policy - Vyra Rewards Pro - Contact: vyraprosupport@gmail.com`;
 export default function App() {
   const [screen, setScreen] = useState('loading');
