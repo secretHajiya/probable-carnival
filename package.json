@@ -6,7 +6,7 @@
     "start": "expo start",
     "prebuild": "expo prebuild",
     "android": "expo run:android",
-    "build": "eas build --platform android"
+    "build": "eas build --platform android --clear-cache"
   },
   "dependencies": {
     "expo": "~51.0.28",
