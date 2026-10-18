@@ -56,4 +56,27 @@ export default function CpxOfferwall({ user }) {
   const SECRET = "zq6KgHGIgOujXyncpghe4Nb1sIdDf0ph";
   const phone = user?.phone? user.phone.replace(/[^0-9]/g, '') : "123456";
   const secureHash = md5(phone + '-' + SECRET);
-  const url = `https://offers.cpx-research.com/index.php?app_id=${APP_ID}&ext_user_id=${phone}&secure_hash=${secureHash
+  const url = `https://offers.cpx-research.com/index.php?app_id=${APP_ID}&ext_user_id=${phone}&secure_hash=${secureHash}&subid_1=vyra&subid_2=app`;
+  
+  return (
+    <View style={styles.container}>
+      <WebView 
+        source={{ uri: url }} 
+        style={styles.webview}
+        startInLoadingState={true}
+        renderLoading={() => (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color="#6a00f4" />
+            <Text style={{marginTop:10}}>Loading CPX...</Text>
+          </View>
+        )}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, height: 650, backgroundColor: '#fff' },
+  webview: { flex: 1 },
+  loading: { flex:1, justifyContent:'center', alignItems:'center', backgroundColor:'#fff' }
+});
