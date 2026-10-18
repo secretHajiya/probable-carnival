@@ -10,7 +10,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, setDoc, collection, addDoc, query, where, getDocs, serverTimestamp, orderBy, getDoc, updateDoc } from 'firebase/firestore';
 
-const VERSION = '1.0.7'; const BUILD = 13;
+const VERSION = '1.0.8'; const BUILD = 14;
 const BANNER_ID = 'ca-app-pub-567288772229131/5819895709';
 const REWARDED_ID = 'ca-app-pub-567288772229131/8254487351';
 const INTERSTITIAL_ID = 'ca-app-pub-567288772229131/2783677985';
