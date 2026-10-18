@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Vyra Test",
-    "slug": "vyra-rewards-pro",
+    "slug": "vyra-rewards",
     "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
         "backgroundColor": "#6a00f4"
       },
       "package": "com.vyrarewards.test",
-      "versionCode": 15,
+      "versionCode": 16,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE"
