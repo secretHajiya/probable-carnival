@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Vyra Test",
+    "name": "Vyra Rewards Pro",
     "slug": "vyra-rewards",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -16,14 +16,23 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#6a00f4"
       },
-      "package": "com.vyrarewards.test",
-      "versionCode": 16,
+      "package": "com.vyrarewards.earn",
+      "versionCode": 18,
       "permissions": [
         "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "com.google.android.gms.permission.AD_ID"
       ]
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-567288772229131~8278538087",
+          "iosAppId": "ca-app-pub-567288772229131~8278538087"
+        }
+      ]
+    ],
     "owner": "secretmadabos-team",
     "extra": {
       "eas": {
