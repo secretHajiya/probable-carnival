@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vyra Rewards Pro",
     "slug": "vyra-rewards",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -10,16 +10,14 @@
       "resizeMode": "contain",
       "backgroundColor": "#6a00f4"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#6a00f4"
       },
       "package": "com.vyrarewards.earn",
-      "versionCode": 19,
+      "versionCode": 22,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
@@ -30,8 +28,18 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-4487679675698542~3146823846",
-          "iosAppId": "ca-app-pub-4487679675698542~3146823846"
+          "androidAppId": "ca-app-pub-555038412799882~7284642872",
+          "iosAppId": "ca-app-pub-555038412799882~7284642872"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 23,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34
+          }
         }
       ]
     ],
@@ -41,5 +49,9 @@
         "projectId": "1e622ff8-fa4d-40d5-9606-20f79ddfcc6f"
       }
     }
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-555038412799882~7284642872",
+    "ios_app_id": "ca-app-pub-555038412799882~7284642872"
   }
 }
