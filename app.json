@@ -18,7 +18,7 @@
         "backgroundColor": "#6a00f4"
       },
       "package": "com.vyrarewards.earn",
-      "versionCode": 23,
+      "versionCode": 24,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
