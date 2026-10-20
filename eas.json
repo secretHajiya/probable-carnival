@@ -8,6 +8,10 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "cache": {
+        "key": "vyra-1.0.9-24",
+        "cacheDefaultPaths": true
       }
     },
     "production": {
@@ -15,5 +19,8 @@
         "buildType": "app-bundle"
       }
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
