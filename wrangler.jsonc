@@ -1,0 +1,12 @@
+{
+  "name": "vyra-rewards-backend",
+  "main": "functions/index.js",
+  "compatibility_date": "2024-01-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vyra-rewards-db",
+      "database_id": "9ffa9187-3d77-4082-890d-d4648012e739"
+    }
+  ]
+}
