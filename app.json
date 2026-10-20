@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "Vyra Rewards Pro",
@@ -28,8 +29,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-555038412790982~7224847840",
-          "iosAppId": "ca-app-pub-555038412790982~7224847840"
+          "androidAppId": "ca-app-pub-5550384127909882~7224847840",
+          "iosAppId": "ca-app-pub-5550384127909882~7224847840"
         }
       ],
       [
@@ -51,7 +52,7 @@
     }
   },
   "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-555038412790982~7224847840",
-    "ios_app_id": "ca-app-pub-555038412790982~7224847840"
+    "android_app_id": "ca-app-pub-5550384127909882~7224847840",
+    "ios_app_id": "ca-app-pub-5550384127909882~7224847840"
   }
 }
