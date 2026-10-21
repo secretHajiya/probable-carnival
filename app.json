@@ -18,6 +18,7 @@
       },
       "package": "com.vyrarewards.earn",
       "versionCode": 24,
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
