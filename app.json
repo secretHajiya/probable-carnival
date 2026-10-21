@@ -17,7 +17,7 @@
         "backgroundColor": "#6a00f4"
       },
       "package": "com.vyrarewards.earn",
-      "versionCode": 24,
+      "versionCode": 25,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.INTERNET",
@@ -29,8 +29,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-5550384127909882~7224847840",
-          "iosAppId": "ca-app-pub-5550384127909882~7224847840"
+          "androidAppId": "ca-app-pub-4487679675698542~6782759052",
+          "iosAppId": "ca-app-pub-4487679675698542~6782759052"
         }
       ],
       [
@@ -49,10 +49,6 @@
       "eas": {
         "projectId": "1e622ff8-fa4d-40d5-9606-20f79ddfcc6f"
       }
-    },
-    "react-native-google-mobile-ads": {
-      "android_app_id": "ca-app-pub-5550384127909882~7224847840",
-      "ios_app_id": "ca-app-pub-5550384127909882~7224847840"
     }
   }
 }
