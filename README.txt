@@ -1,113 +1,105 @@
-VYRA REWARDS PRO — FINAL README
+VYRA REWARDS PRO — README (v1.0.9 / BUILD 27)
+================================================
 
-Version: 1.0.9
-Android versionCode: 25
-Build: 27 (UI build label; confirm separately from Android versionCode)
+PROJECT
+-------
+App name: Vyra Rewards Pro
+Slug: vyra-rewards (provided project information; verify in app.json)
+React Native / Expo app
+App.js displayed version: 1.0.9
+App.js displayed build: 27
 
-1. Project Information
+IMPORTANT VERSION NOTE
+----------------------
+The supplied App.js shows VERSION = 1.0.9 and BUILD = 27.
+The older notes saying versionCode 24 / Build 25 do not match this App.js.
+Android versionCode is configured in app.json and is NOT included in this ZIP,
+so check app.json before building. Do not assume versionCode is 27 unless
+app.json actually says so.
 
-- App name: Vyra Rewards Pro
-- Slug: "vyra-rewards"
-- Package name: "com.vyrarewards.earn"
-- Expo owner: "secretmadabos-team"
-- EAS Project ID: "1e622ff8-fa4d-40d5-9606-20f79ddfcc6f"
-- Firebase project: "vyra-rewards-pro"
+BACKEND / SERVICES (read from App.js)
+-------------------------------------
+Firebase project ID: vyra-rewards-pro
+Cloudflare Worker backend:
+https://vyra-rewards-backend.abdullahiwaziri9004.workers.dev
 
-2. Technology Stack
+CPX Research:
+App ID / hidden global value: 37222
+Hash: zq6KgHGIgOujXyncpghe4Nb1sIdDf0ph
 
-- Expo SDK: "~51.0.0"
-- React: "18.2.0"
-- React Native: "0.74.5"
-- React Native Google Mobile Ads: "14.7.1"
-- Firebase: "10.12.0"
-- React Native WebView: "13.8.6"
-- Expo Build Properties: "~0.12.1"
-- Babel preset Expo: "~11.0.0"
+EmailJS:
+Service ID: service_eo4mafe
+OTP template ID: template_vla0zff
+Notification template ID: template_8u8r9r9
+Public key: Ee45lolv3ZCjOSWUy
 
-3. Android Configuration
+OTP NOTE
+--------
+App.js sends these template parameters for the OTP email:
+to_email, to_name, otp, otp_code, code, verification_code, app_name.
+The EmailJS template must include the matching variable, for example {{otp}}.
+Sending multiple possible parameter names does not guarantee that the code
+appears in the email; the actual template must use one of the variables above.
+The email must be tested in EmailJS and on-device before claiming OTP is fixed.
 
-- Minimum SDK: 23
-- Compile SDK: 34
-- Target SDK: 34
-- Internet permission: enabled
-- Network state permission: enabled
-- Advertising ID permission: enabled
-- Google Services file: "./google-services.json"
+ADMOB
+-----
+The App.js in this Build 27 ZIP contains the following publisher / ad-unit IDs:
+Banner:               ca-app-pub-4487679675698542/9735385137
+Rewarded:             ca-app-pub-4487679675698542/4561195480
+Interstitial:         ca-app-pub-4487679675698542/2617558428
+Rewarded Interstitial:ca-app-pub-4487679675698542/2234415047
+App Open:             ca-app-pub-4487679675698542/6005848843
 
-4. AdMob Configuration
+AdMob test ads:
+USE_TEST_ADS = true in App.js. The ad-unit constants above are listed in the
+source, but TestIds are selected while USE_TEST_ADS is true. This is intended
+for testing, not a production monetization build.
 
-App ID configured in "app.json":
+The older README listed a different publisher (5550384127909882) and different
+ad-unit IDs. That older AdMob information does NOT match this App.js.
+The AdMob App ID configured in app.json cannot be verified from this ZIP because
+app.json is not included. Confirm it belongs to the same AdMob app/publisher
+before building.
 
-"ca-app-pub-4487679675698542~6782759052"
+FILES INCLUDED IN THIS ZIP
+--------------------------
+1. App.js — React Native / Expo application source.
+2. README.txt — this documentation.
 
-Ad unit IDs reported for "App.js":
+Files NOT included in this ZIP
+------------------------------
+app.json, package.json, eas.json, codemagic.yaml, firebase.json,
+firestore.rules, wrangler.jsonc, babel.config.js, and CpxOfferwall.js are not
+included here. Their settings and presence cannot be confirmed from this ZIP.
 
-- Rewarded: "ca-app-pub-4487679675698542/4561195480"
-- Interstitial: "ca-app-pub-4487679675698542/2617558428"
+PACKAGE / BUILD REQUIREMENTS
+----------------------------
+The older README says react-native-google-mobile-ads must be exactly 14.7.1
+without a caret. This ZIP does not contain package.json, so that dependency
+version cannot be verified here. Check package.json and the Expo SDK compatibility
+before installing or building; do not assume the old package instruction is
+correct without checking the project's actual dependency set.
 
-Confirm these IDs against the intended AdMob account before production release. Test ads should be used during development and testing.
+Suggested EAS APK build (only after app.json/package.json are verified):
+  npm install
+  eas build --platform android --profile preview
 
-5. Backend and Surveys
+For production, verify the production profile and Android application ID,
+versionCode, AdMob App ID, and real ad-unit configuration before uploading.
 
-- Cloudflare Worker URL: "https://vyra-rewards-backend.abdullahiwaziri9004.workers.dev"
-- CPX Research App ID: "37222"
-- CPX Research hash: configured in the existing project; keep it private.
-- Firebase project: "vyra-rewards-pro"
+CURRENT BUILD STATUS
+--------------------
+This source was statically inspected only. No EAS/Gradle build or on-device
+test has been performed for this ZIP. Verify login/register, EmailJS OTP,
+reward-ad reward callbacks, CPX, wallet/withdrawal, and theme persistence before
+publishing.
 
-Keep backend secrets and verification logic on the server where possible. Do not expose private API secrets in a public repository or client application.
-
-6. Important Project Files
-
-- "App.js" — React Native application interface and app logic
-- "app.json" — Expo and Android configuration
-- "package.json" — dependencies and scripts
-- "eas.json" — EAS build profiles
-- "codemagic.yaml" — Codemagic CI configuration, if present
-- "firebase.json" — Firebase deployment configuration, if present
-- "firestore.rules" — Firestore security rules, if present
-- "wrangler.jsonc" — Cloudflare Worker configuration, if present
-- "babel.config.js" — Babel configuration
-- "google-services.json" — Firebase Android configuration
-
-7. Install Dependencies
-
-npm install
-
-The project specifies "react-native-google-mobile-ads" as the exact version "14.7.1", without a version range prefix.
-
-8. Build APK with EAS
-
-npx eas-cli build --platform android --profile preview
-
-Ensure the "preview" profile in "eas.json" specifies Android APK output.
-
-For a production Android App Bundle:
-
-npx eas-cli build --platform android --profile production
-
-Ensure the "production" profile specifies Android App Bundle output.
-
-9. Deployment
-
-Deploy Firestore rules, if the project is configured for them:
-
-firebase deploy --only firestore:rules
-
-Deploy the Cloudflare Worker from the directory containing its configuration:
-
-npx wrangler deploy
-
-10. Release Checklist
-
-- Confirm the app package and EAS project ID.
-- Verify the Firebase configuration file belongs to the intended project.
-- Verify the AdMob App ID and ad unit IDs.
-- Check EmailJS OTP template variables and verify that the actual code appears in the email.
-- Test registration, OTP verification, ads, surveys, wallet, and withdrawal flows.
-- Confirm backend validation and Firestore security rules.
-- Increment Android "versionCode" for each new Android release uploaded to a store.
-- Run a clean build and test the resulting APK/AAB before release.
-
-11. Verification Notes
-
-This README reflects the supplied "app.json" and "package.json", plus the backend and ad-unit details provided for this project. It does not by itself confirm that the current source compiles, that EmailJS displays the OTP correctly, or that the live ad units are approved and serving ads.
+UI UPDATE IN BUILD 27
+---------------------
+- Gold, Light, and Dark themes
+- Daily Streak display (UI only; automatic backend rewards are not implemented
+  by this UI change)
+- Native Share action for Refer & Earn
+- Top Earners section placeholder (not a live verified leaderboard)
+- Earn More with Surveys card directing users to Offers / CPX Research
