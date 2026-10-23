@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Vyra Rewards Pro",
+    "name": "Vyra Rewards",
     "slug": "vyra-rewards",
     "version": "1.0.9",
     "orientation": "portrait",
@@ -8,18 +8,18 @@
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#6a00f4"
+      "backgroundColor": "#0A168C"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#6a00f4"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A168C"
       },
       "package": "com.vyrarewards.earn",
-      "versionCode": 25,
+      "versionCode": 32,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.INTERNET",
