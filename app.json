@@ -19,7 +19,7 @@
         "backgroundColor": "#6a00f4"
       },
       "package": "com.vyrarewards.earn",
-      "versionCode": 25,
+      "versionCode": 27,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.INTERNET",
