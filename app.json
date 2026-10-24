@@ -20,7 +20,7 @@
         "monochromeImage": "./assets/icon.png"
       },
       "package": "com.vyrarewards.earn",
-      "versionCode": 33,
+      "versionCode": 34,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.INTERNET",
@@ -28,6 +28,7 @@
       ]
     },
     "plugins": [
+      "unity-levelplay-mediation",
       [
         "expo-build-properties",
         {
