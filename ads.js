@@ -1,90 +1,48 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  BannerAd,
-  BannerAdSize,
-  InterstitialAd,
-  AdEventType,
-  RewardedAd,
-  RewardedAdEventType,
-  RewardedInterstitialAd,
-  AppOpenAd,
-} from 'react-native-google-mobile-ads';
+import { LevelPlay, LevelPlayInitRequest, LevelPlayRewardedAd, LevelPlayInterstitialAd } from 'unity-levelplay-mediation';
 
-// These are ad UNIT IDs. The App Open ID is kept consistent with App.js.
-export const AD_IDS = {
-  appOpen: 'ca-app-pub-3940256099942544/9257395921',
-  banner: 'ca-app-pub-3940256099942544/9214589741',
-  interstitial: 'ca-app-pub-3940256099942544/1033173712',
-  rewarded: 'ca-app-pub-3940256099942544/5224354917',
-  rewardedInterstitial: 'ca-app-pub-3940256099942544/5354046379',
+const APP_KEY = "800410171";
+const REWARDED_ID = "BP_Rewarded_Android";
+const INTERSTITIAL_ID = "BP_Interstitial_Android";
+
+export const initAds = async () => {
+  const initListener = {
+    onInitSuccess: (config) => {
+      console.log("LevelPlay Init Success", config);
+      loadRewarded();
+      loadInterstitial();
+    },
+    onInitFailed: (error) => {
+      console.log("Init Failed", error);
+    }
+  };
+
+  const initRequest = LevelPlayInitRequest.builder(APP_KEY)
+    .withUserId("user_vyra")
+    .build();
+
+  LevelPlay.init(initRequest, initListener);
 };
 
-export function Banner() {
-  return <BannerAd unitId={AD_IDS.banner} size={BannerAdSize.BANNER} />;
-}
+// REWARDED
+export const rewardedAd = new LevelPlayRewardedAd(REWARDED_ID);
+rewardedAd.setListener({
+  onAdLoaded: (info) => console.log("Rewarded Ready", info),
+  onAdLoadFailed: (err) => console.log("Rewarded Failed", err),
+  onAdRewarded: (reward, info) => console.log("User Earned Reward", reward),
+  onAdClosed: () => loadRewarded()
+});
 
-export function useInterstitial() {
-  const [loaded, setLoaded] = useState(false);
-  const adRef = useRef(null);
-  useEffect(() => {
-    const ad = InterstitialAd.createForAdRequest(AD_IDS.interstitial);
-    adRef.current = ad;
-    const unsubs = [
-      ad.addAdEventListener(AdEventType.LOADED, () => setLoaded(true)),
-      ad.addAdEventListener(AdEventType.CLOSED, () => { setLoaded(false); ad.load(); }),
-      ad.addAdEventListener(AdEventType.ERROR, () => setLoaded(false)),
-    ];
-    ad.load();
-    return () => unsubs.forEach(unsub => unsub && unsub());
-  }, []);
-  return { loaded, show: () => { if (loaded && adRef.current) return adRef.current.show(); return Promise.resolve(false); } };
-}
+export const loadRewarded = () => rewardedAd.loadAd();
+export const showRewarded = () => {
+  if (rewardedAd.isAdReady && rewardedAd.isAdReady()) {
+    rewardedAd.showAd();
+  } else {
+    console.log("Rewarded not ready");
+    loadRewarded();
+  }
+};
 
-export function useRewarded(onReward) {
-  const [loaded, setLoaded] = useState(false);
-  const adRef = useRef(null);
-  useEffect(() => {
-    const ad = RewardedAd.createForAdRequest(AD_IDS.rewarded);
-    adRef.current = ad;
-    const unsubs = [
-      ad.addAdEventListener(RewardedAdEventType.LOADED, () => setLoaded(true)),
-      ad.addAdEventListener(RewardedAdEventType.EARNED_REWARD, reward => { if (onReward) onReward(reward); }),
-      ad.addAdEventListener(AdEventType.CLOSED, () => { setLoaded(false); ad.load(); }),
-      ad.addAdEventListener(AdEventType.ERROR, () => setLoaded(false)),
-    ];
-    ad.load();
-    return () => unsubs.forEach(unsub => unsub && unsub());
-  }, [onReward]);
-  return { loaded, show: () => { if (loaded && adRef.current) return adRef.current.show(); return Promise.resolve(false); } };
-}
-
-export function useRewardedInterstitial(onReward) {
-  const [loaded, setLoaded] = useState(false);
-  const adRef = useRef(null);
-  useEffect(() => {
-    const ad = RewardedInterstitialAd.createForAdRequest(AD_IDS.rewardedInterstitial);
-    adRef.current = ad;
-    const unsubs = [
-      ad.addAdEventListener(RewardedAdEventType.LOADED, () => setLoaded(true)),
-      ad.addAdEventListener(RewardedAdEventType.EARNED_REWARD, reward => { if (onReward) onReward(reward); }),
-      ad.addAdEventListener(AdEventType.CLOSED, () => { setLoaded(false); ad.load(); }),
-      ad.addAdEventListener(AdEventType.ERROR, () => setLoaded(false)),
-    ];
-    ad.load();
-    return () => unsubs.forEach(unsub => unsub && unsub());
-  }, [onReward]);
-  return { loaded, show: () => { if (loaded && adRef.current) return adRef.current.show(); return Promise.resolve(false); } };
-}
-
-export function useAppOpen() {
-  useEffect(() => {
-    const ad = AppOpenAd.createForAdRequest(AD_IDS.appOpen);
-    const unsubs = [
-      ad.addAdEventListener(AdEventType.LOADED, () => ad.show().catch(() => {})),
-      ad.addAdEventListener(AdEventType.CLOSED, () => ad.load()),
-      ad.addAdEventListener(AdEventType.ERROR, () => {}),
-    ];
-    ad.load();
-    return () => unsubs.forEach(unsub => unsub && unsub());
-  }, []);
-}
+// INTERSTITIAL
+export const interstitialAd = new LevelPlayInterstitialAd(INTERSTITIAL_ID);
+export const loadInterstitial = () => interstitialAd.loadAd();
+export const showInterstitial = () => interstitialAd.showAd();
