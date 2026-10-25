@@ -16,11 +16,10 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#0A168C",
-        "monochromeImage": "./assets/icon.png"
+        "backgroundColor": "#0A168C"
       },
       "package": "com.vyrarewards.earn",
-      "versionCode": 35,
+      "versionCode": 36,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.INTERNET",
@@ -29,7 +28,6 @@
       ]
     },
     "plugins": [
-      "unity-levelplay-mediation",
       [
         "expo-build-properties",
         {
