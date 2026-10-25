@@ -6,7 +6,7 @@ includes a points wallet, tap-based activity, offers, CPX Research
 survey access, referral features, withdrawal requests, app themes, and
 Terms of Service / Privacy Policy screens.
 
-> **Important:** This README documents the current app source. A feature
+> **Important:** Thi README documents the current app source. A feature
 > shown in the interface does not by itself guarantee that an external
 > service is configured, that a reward has been verified, or that a
 > withdrawal will be paid.
