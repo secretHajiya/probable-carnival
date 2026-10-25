@@ -3,6 +3,7 @@ import { LevelPlay, LevelPlayInitRequest, LevelPlayRewardedAd, LevelPlayIntersti
 const APP_KEY = "800410171";
 const REWARDED_ID = "BP_Rewarded_Android";
 const INTERSTITIAL_ID = "BP_Interstitial_Android";
+export const BANNER_ID = "BP_Banner_Android";
 
 export const initAds = async () => {
   const initListener = {
@@ -25,24 +26,39 @@ export const initAds = async () => {
 
 // REWARDED
 export const rewardedAd = new LevelPlayRewardedAd(REWARDED_ID);
+
 rewardedAd.setListener({
   onAdLoaded: (info) => console.log("Rewarded Ready", info),
   onAdLoadFailed: (err) => console.log("Rewarded Failed", err),
   onAdRewarded: (reward, info) => console.log("User Earned Reward", reward),
-  onAdClosed: () => loadRewarded()
+  onAdClosed: () => loadRewarded(),
+  onAdDisplayFailed: (err) => console.log("Rewarded Display Failed", err)
 });
 
 export const loadRewarded = () => rewardedAd.loadAd();
 export const showRewarded = () => {
-  if (rewardedAd.isAdReady && rewardedAd.isAdReady()) {
+  if (rewardedAd.isAdReady()) {
     rewardedAd.showAd();
   } else {
-    console.log("Rewarded not ready");
+    console.log("Rewarded not ready, loading...");
     loadRewarded();
   }
 };
 
 // INTERSTITIAL
 export const interstitialAd = new LevelPlayInterstitialAd(INTERSTITIAL_ID);
+
+interstitialAd.setListener({
+  onAdLoaded: () => console.log("Interstitial Ready"),
+  onAdLoadFailed: (err) => console.log("Interstitial Failed", err),
+  onAdClosed: () => loadInterstitial()
+});
+
 export const loadInterstitial = () => interstitialAd.loadAd();
-export const showInterstitial = () => interstitialAd.showAd();
+export const showInterstitial = () => {
+  if (interstitialAd.isAdReady()) {
+    interstitialAd.showAd();
+  } else {
+    loadInterstitial();
+  }
+};
