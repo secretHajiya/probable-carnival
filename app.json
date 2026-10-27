@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Vyra Reawards",
+    "slug": "vyra-rewards",
+    "version": "1.0.9",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#0A168C"
+    },
+    "assetBundlePatterns": [
+      "assets/*"
+    ],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0A168C"
+      },
+      "package": "com.vyrarewards.earn",
+      "versionCode": 36,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "com.google.android.gms.permission.AD_ID"
+      ]
+    },
+    "plugins": [
+      "./plugins/withUnityLevelPlay",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 23,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "extraMavenRepos": [
+              "https://android-sdk.is.com/"
+            ]
+          }
+        }
+      ]
+    ],
+    "owner": "secretmadabos-team",
+    "extra": {
+      "eas": {
+        "projectId": "1e622ff8-fa4d-40d5-9606-20f79ddfcc6f"
+      }
+    }
+  }
+}
