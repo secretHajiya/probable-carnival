@@ -1,6 +1,6 @@
 /**
  * Expo config plugin: Unity Ads Classic (com.unity3d.ads:unity-ads) native integration.
- * FIXED VERSION - No external folder needed
+ * FIXED - No external folder needed - Banner fix for 4.12.2
  */
 const fs = require('fs');
 const path = require('path');
@@ -72,22 +72,30 @@ class VyraUnityAdsPackage : ReactPackage {
 `,
   'VyraUnityBannerManager.kt': `
 package __PACKAGE__.unityads
+import android.widget.FrameLayout
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.unity3d.services.banners.BannerView
-class VyraUnityBannerManager : SimpleViewManager<BannerView>() {
+import com.unity3d.services.banners.UnityBannerSize
+
+class VyraUnityBannerManager : SimpleViewManager<FrameLayout>() {
     override fun getName() = "VyraUnityBanner"
-    override fun createViewInstance(ctx: ThemedReactContext): BannerView {
-        return BannerView(ctx, "", null)
+    override fun createViewInstance(ctx: ThemedReactContext): FrameLayout {
+        return FrameLayout(ctx)
     }
     @ReactProp(name = "placementId")
-    fun setPlacementId(view: BannerView, id: String) {
-        view.placementId = id
-        view.load()
+    fun setPlacementId(view: FrameLayout, id: String) {
+        view.removeAllViews()
+        try {
+            val activity = view.context as? android.app.Activity ?: return
+            val bannerView = BannerView(activity, id, UnityBannerSize(320, 50))
+            view.addView(bannerView)
+            bannerView.load()
+        } catch (e: Exception) {}
     }
-    @ReactProp(name = "bannerWidth") fun setW(view: BannerView, w: Int) {}
-    @ReactProp(name = "bannerHeight") fun setH(view: BannerView, h: Int) {}
+    @ReactProp(name = "bannerWidth") fun setW(view: FrameLayout, w: Int) {}
+    @ReactProp(name = "bannerHeight") fun setH(view: FrameLayout, h: Int) {}
 }
 `
 };
