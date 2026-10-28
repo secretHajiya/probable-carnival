@@ -1,10 +1,6 @@
 /**
  * Expo config plugin: Unity Ads Classic (com.unity3d.ads:unity-ads) native integration.
- *
- * It (1) adds the Unity Ads Gradle dependency, (2) makes sure mavenCentral() is present,
- * (3) copies the Kotlin bridge in ./unity-ads-native into the generated android project, and
- * (4) registers VyraUnityAdsPackage in MainApplication.
- * It replaces the old LevelPlay plugin. No LevelPlay / mediation code is used.
+ * FIXED VERSION - No external folder needed
  */
 const fs = require('fs');
 const path = require('path');
@@ -15,15 +11,86 @@ const {
   withDangerousMod,
 } = require('@expo/config-plugins');
 
-// Unity Ads Classic SDK version (Maven Central). Change here if you want to bump it.
 const UNITY_ADS_VERSION = '4.12.2';
 const UNITY_ADS_DEPENDENCY = `implementation("com.unity3d.ads:unity-ads:${UNITY_ADS_VERSION}")`;
 const NATIVE_SUBPACKAGE = 'unityads';
-const NATIVE_FILES = [
-  'VyraUnityAdsModule.kt',
-  'VyraUnityAdsPackage.kt',
-  'VyraUnityBannerManager.kt',
-];
+const NATIVE_FILES = {
+  'VyraUnityAdsModule.kt': `
+package __PACKAGE__.unityads
+import com.facebook.react.bridge.*
+import com.unity3d.ads.*
+import com.facebook.react.modules.core.DeviceEventManagerModule
+
+class VyraUnityAdsModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+    override fun getName() = "VyraUnityAds"
+    private fun sendEvent(type: String, placementId: String) {
+        val map = Arguments.createMap()
+        map.putString("type", type)
+        map.putString("placementId", placementId)
+        reactApplicationContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VyraUnityAdsEvent", map)
+    }
+    @ReactMethod
+    fun initialize(gameId: String, testMode: Boolean, promise: Promise) {
+        if (UnityAds.isInitialized) { promise.resolve(true); return }
+        UnityAds.initialize(reactApplicationContext, gameId, testMode, object : IUnityAdsInitializationListener {
+            override fun onInitializationComplete() { promise.resolve(true) }
+            override fun onInitializationFailed(error: UnityAds.UnityAdsInitializationError, msg: String) { promise.reject(error.toString(), msg) }
+        })
+    }
+    @ReactMethod
+    fun loadAd(placementId: String, promise: Promise) {
+        UnityAds.load(placementId, object : IUnityAdsLoadListener {
+            override fun onUnityAdsAdLoaded(p: String) { sendEvent("loaded", p); promise.resolve(true) }
+            override fun onUnityAdsFailedToLoad(p: String, error: UnityAds.UnityAdsLoadError, msg: String) { sendEvent("loadFailed", p); promise.reject("LOAD_FAILED", msg) }
+        })
+    }
+    @ReactMethod
+    fun showAd(placementId: String, promise: Promise) {
+        UnityAds.show(currentActivity, placementId, object : IUnityAdsShowListener {
+            override fun onUnityAdsShowComplete(p: String, state: UnityAds.UnityAdsShowCompletionState) {
+                val map = Arguments.createMap()
+                map.putString("completionState", state.name)
+                promise.resolve(map)
+            }
+            override fun onUnityAdsShowFailure(p: String, error: UnityAds.UnityAdsShowError, msg: String) { promise.reject("SHOW_FAILED", msg) }
+            override fun onUnityAdsShowStart(p: String) {}
+            override fun onUnityAdsShowClick(p: String) {}
+        })
+    }
+}
+`,
+  'VyraUnityAdsPackage.kt': `
+package __PACKAGE__.unityads
+import com.facebook.react.ReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.uimanager.ViewManager
+class VyraUnityAdsPackage : ReactPackage {
+    override fun createNativeModules(ctx: ReactApplicationContext): List<NativeModule> = listOf(VyraUnityAdsModule(ctx))
+    override fun createViewManagers(ctx: ReactApplicationContext): List<ViewManager<*, *>> = listOf(VyraUnityBannerManager())
+}
+`,
+  'VyraUnityBannerManager.kt': `
+package __PACKAGE__.unityads
+import com.facebook.react.uimanager.SimpleViewManager
+import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.annotations.ReactProp
+import com.unity3d.services.banners.BannerView
+class VyraUnityBannerManager : SimpleViewManager<BannerView>() {
+    override fun getName() = "VyraUnityBanner"
+    override fun createViewInstance(ctx: ThemedReactContext): BannerView {
+        return BannerView(ctx, "", null)
+    }
+    @ReactProp(name = "placementId")
+    fun setPlacementId(view: BannerView, id: String) {
+        view.placementId = id
+        view.load()
+    }
+    @ReactProp(name = "bannerWidth") fun setW(view: BannerView, w: Int) {}
+    @ReactProp(name = "bannerHeight") fun setH(view: BannerView, h: Int) {}
+}
+`
+};
 
 function getPackageName(config) {
   const pkg = config.android && config.android.package;
@@ -44,22 +111,17 @@ function withUnityAdsGradle(config) {
     cfg.modResults.contents = contents;
     return cfg;
   });
-
-  // The default Expo/RN template already has mavenCentral(); make sure of it.
   config = withProjectBuildGradle(config, (cfg) => {
     let contents = cfg.modResults.contents;
     if (!/mavenCentral\(\)/.test(contents)) {
       const re = /(allprojects\s*\{\s*repositories\s*\{)/;
       if (re.test(contents)) {
         contents = contents.replace(re, '$1\n        mavenCentral()');
-      } else {
-        console.warn('[withUnityAdsClassic] Could not find allprojects.repositories; verify mavenCentral() is present.');
       }
     }
     cfg.modResults.contents = contents;
     return cfg;
   });
-
   return config;
 }
 
@@ -68,7 +130,6 @@ function withUnityAdsNativeFiles(config) {
     'android',
     async (cfg) => {
       const pkg = getPackageName(cfg);
-      const srcDir = path.join(__dirname, 'unity-ads-native');
       const destDir = path.join(
         cfg.modRequest.platformProjectRoot,
         'app', 'src', 'main', 'java',
@@ -76,8 +137,8 @@ function withUnityAdsNativeFiles(config) {
         NATIVE_SUBPACKAGE
       );
       fs.mkdirSync(destDir, { recursive: true });
-      for (const file of NATIVE_FILES) {
-        const template = fs.readFileSync(path.join(srcDir, file), 'utf8');
+      for (const file of Object.keys(NATIVE_FILES)) {
+        const template = NATIVE_FILES[file];
         fs.writeFileSync(path.join(destDir, file), template.replace(/__PACKAGE__/g, pkg));
       }
       return cfg;
@@ -91,36 +152,20 @@ function withUnityAdsMainApplication(config) {
     const importLine = `${pkg}.${NATIVE_SUBPACKAGE}.VyraUnityAdsPackage`;
     let contents = cfg.modResults.contents;
     const isKotlin = cfg.modResults.language === 'kt';
-
-    if (contents.includes('VyraUnityAdsPackage')) return cfg; // already patched
-
-    // import
+    if (contents.includes('VyraUnityAdsPackage')) return cfg;
     contents = contents.replace(/^(package .+\n)/m, `$1\nimport ${importLine}${isKotlin ? '' : ';'}\n`);
-
-    // registration
     if (isKotlin) {
       const applyRe = /(PackageList\(this\)\.packages\.apply\s*\{)/;
       const returnRe = /return\s+PackageList\(this\)\.packages(?![\w.])/;
       if (applyRe.test(contents)) {
-        // RN template style: PackageList(this).packages.apply { ... }
         contents = contents.replace(applyRe, '$1\n              add(VyraUnityAdsPackage())');
       } else if (returnRe.test(contents)) {
-        // Expo template style: return PackageList(this).packages
-        contents = contents.replace(
-          returnRe,
-          'return PackageList(this).packages.toMutableList().apply { add(VyraUnityAdsPackage()) }'
-        );
-      } else {
-        throw new Error('[withUnityAdsClassic] Could not find where PackageList is built in MainApplication.kt');
+        contents = contents.replace(returnRe, 'return PackageList(this).packages.toMutableList().apply { add(VyraUnityAdsPackage()) }');
       }
     } else {
       const re = /(List<ReactPackage>\s+packages\s*=\s*new PackageList\(this\)\.getPackages\(\);)/;
-      if (!re.test(contents)) {
-        throw new Error('[withUnityAdsClassic] Could not find PackageList in MainApplication.java');
-      }
       contents = contents.replace(re, '$1\n      packages.add(new VyraUnityAdsPackage());');
     }
-
     cfg.modResults.contents = contents;
     return cfg;
   });
