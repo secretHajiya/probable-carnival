@@ -1,0 +1,20 @@
+Vyra Rewards Global — Step32 verification
+
+Scope: US PayPal member withdrawal UI + Admin Finance sandbox submission action.
+
+PASS — 10/10 Step32 UI contract checks.
+PASS — 11/11 existing Step28 single-admin source checks.
+PASS — Step31 ZIP source archive integrity before edits.
+PASS — NG bank-transfer request path retained in source.
+PASS — US PayPal request routed to dedicated Worker and dedicated Supabase RPC.
+PASS — Admin action requires explicit confirmation and Worker-side Finance Admin authorization.
+PASS — US PayPal recipient is never displayed as bank details.
+
+NOT RUN / NOT CLAIMED:
+- Web/Admin TypeScript production builds (node_modules not present in this working environment).
+- Supabase migration 031 deployment.
+- Cloudflare Worker deployment or secrets configuration.
+- PayPal sandbox E2E or webhook test.
+- Production payout or live withdrawal activation.
+
+Safety state preserved: migration 031 sets NG and US withdrawal_config.is_enabled=false.

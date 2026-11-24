@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+const root = path.resolve(import.meta.dirname, '..');
+const app = fs.readFileSync(path.join(root, 'apps/mobile/App.tsx'), 'utf8');
+const i18n = fs.readFileSync(path.join(root, 'apps/mobile/src/services/i18n.ts'), 'utf8');
+const profile = fs.readFileSync(path.join(root, 'apps/mobile/src/components/ProfileSettingsPanel.tsx'), 'utf8');
+const service = fs.readFileSync(path.join(root, 'apps/mobile/src/services/profile-settings.service.ts'), 'utf8');
+const locales = ['en','ar','fr','es','pt','de','tr','hi','zh'];
+let passed = 0;
+for (const locale of locales) { assert.match(i18n, new RegExp(`\\n  ${locale}: \\{`), `${locale} dictionary exists`); passed++; }
+assert.match(i18n, /export function t\(language:/); passed++;
+assert.match(i18n, /return \(messages\[locale\] as Record<TranslationKey, string>\)/); passed++;
+assert.match(app, /profile\?\.preferred_language \|\| 'en'/); passed++;
+assert.match(app, /tr\('availableCoins'\)/); passed++;
+assert.match(app, /tr\('earnCoins'\)/); passed++;
+assert.match(app, /tr\('secureFooter'\)/); passed++;
+assert.match(app, /setTab\('Home'\)/); passed++;
+assert.match(profile, /t\(selectedLanguage, 'profileSettings'\)/); passed++;
+assert.match(profile, /language: selectedLanguage/); passed++;
+assert.match(service, /preferred_language: input\.language/); passed++;
+assert.doesNotMatch(service, /code: 'ha', label: 'Hausa'/); passed++;
+assert.doesNotMatch(service, /country_code\s*:/); passed++;
+console.log(`Step50 mobile localization contract: ${passed}/${passed} passed`);

@@ -1,0 +1,8 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+export type ProviderConfig = { provider_code:string; display_name:string; integration_type:'offerwall'|'survey'|'task'|'other'; is_enabled:boolean; secret_configured:boolean; notes:string; updated_at:string };
+export type ProviderAppConfig = { id:string; provider_code:string; platform:'web'|'android'|'ios'; external_app_id:string; country_code:string; is_enabled:boolean };
+export type ProviderSnapshot = { providers:ProviderConfig[]; apps:ProviderAppConfig[] };
+async function callRpc<T>(client:SupabaseClient,name:string,args:Record<string,unknown>={}) { const {data,error}=await client.rpc(name,args); if(error) throw new Error(error.message); return data as T; }
+export const listRewardProviders=(client:SupabaseClient)=>callRpc<ProviderSnapshot>(client,'admin_list_reward_providers');
+export const saveRewardProvider=(client:SupabaseClient,p:{code:string;name:string;type:ProviderConfig['integration_type'];enabled:boolean;secretReference?:string;notes?:string})=>callRpc<void>(client,'admin_upsert_reward_provider',{p_provider_code:p.code.trim().toLowerCase(),p_display_name:p.name.trim(),p_integration_type:p.type,p_is_enabled:p.enabled,p_secret_reference:p.secretReference?.trim()||null,p_notes:p.notes?.trim()||''});
+export const saveRewardProviderApp=(client:SupabaseClient,a:{providerCode:string;platform:ProviderAppConfig['platform'];externalAppId:string;countryCode:string;enabled:boolean})=>callRpc<void>(client,'admin_upsert_reward_provider_app',{p_provider_code:a.providerCode.trim().toLowerCase(),p_platform:a.platform,p_external_app_id:a.externalAppId.trim(),p_country_code:a.countryCode.trim().toUpperCase(),p_is_enabled:a.enabled});

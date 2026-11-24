@@ -1,0 +1,35 @@
+{
+  "name": "vyra-rewards-global",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "workspaces": [
+    "apps/web",
+    "apps/admin",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @vyra-rewards/web run dev",
+    "dev:admin": "npm --workspace @vyra-rewards/admin run dev",
+    "dev:mobile": "npm --workspace @vyra/mobile run start",
+    "android:mobile": "npm --workspace @vyra/mobile run android",
+    "build:web": "npm --workspace @vyra-rewards/web run build",
+    "build:admin": "npm --workspace @vyra-rewards/admin run build",
+    "build": "npm run build:web && npm run build:admin",
+    "typecheck:mobile": "npm --workspace @vyra/mobile run typecheck",
+    "prebuild:mobile:android": "npm --workspace @vyra/mobile run prebuild:android",
+    "test:cpx-worker": "node --test tests/cpx/cpx-worker.integration.test.mjs",
+    "test:step32-ui": "node tests/step32_ui_contract_checks.mjs",
+    "preflight:web-admin": "node scripts/step33-build-preflight.mjs",
+    "test:step40-paypal-member-safety": "node tests/step40_member_paypal_safety_contract.mjs",
+    "preflight:mobile:android": "npm --workspace @vyra/mobile run preflight:android",
+    "check:lockfile": "node scripts/step60-lockfile-preflight.mjs",
+    "preflight:dependencies": "node scripts/step61-dependency-resolution-preflight.mjs",
+    "diagnose:npm-registry": "node scripts/step62-registry-connectivity-diagnostic.mjs",
+    "test:step64-network-runbook": "node --test tests/step64_eai_again_runbook.mjs",
+    "test:step65-codemagic-install-parity": "node --test tests/step65_codemagic_install_parity.test.mjs"
+  }
+}

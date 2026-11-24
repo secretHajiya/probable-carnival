@@ -1,0 +1,7 @@
+name = "vyra-payout-details"
+main = "src/index.ts"
+compatibility_date = "2026-11-21"
+
+[vars]
+PAYOUT_KEY_VERSION = "v1"
+# Set ALLOWED_ORIGIN to the exact deployed member/admin origin before deployment.

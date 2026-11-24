@@ -1,0 +1,13 @@
+{
+  "step": 4,
+  "module_files_created": true,
+  "database_migration_created": true,
+  "signup_signin_services": true,
+  "password_recovery_service": true,
+  "session_provider": true,
+  "profile_read_and_language_update": true,
+  "full_app_entrypoint_integrated": false,
+  "supabase_credentials_available": false,
+  "live_auth_tested": false,
+  "production_ready": false
+}

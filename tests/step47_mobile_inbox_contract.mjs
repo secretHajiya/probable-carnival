@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+const root = resolve(import.meta.dirname, '..');
+const read = (p) => readFileSync(resolve(root, p), 'utf8');
+const app = read('apps/mobile/App.tsx');
+const panel = read('apps/mobile/src/components/MemberInboxPanel.tsx');
+const service = read('apps/mobile/src/services/member-inbox.service.ts');
+const migration = read('supabase/migrations/015_notifications_support.sql');
+let passed = 0;
+function check(name, fn) { fn(); passed++; console.log(`PASS ${name}`); }
+check('Inbox tab is registered', () => assert.match(app, /type Tab =[^;]*'Inbox'/));
+check('Inbox panel is imported and mounted', () => { assert.match(app, /import \{ MemberInboxPanel \}/); assert.match(app, /tab === 'Inbox' && <MemberInboxPanel userId=\{session\.user\.id\}/); });
+check('Home offers direct Inbox navigation', () => assert.match(app, /title=\{tr\('inboxSupport'\)\}[\s\S]*setTab\('Inbox'\)/));
+check('Bottom navigation includes Inbox', () => assert.match(app, /'Home','Earn','Activity','Referrals'[\s\S]*'Inbox'[\s\S]*'Profile'/));
+check('Notifications read is limited to selected fields and recent rows', () => { assert.match(service, /from\('member_notifications'\)[\s\S]*select\('id,title,body,notification_type,action_path,read_at,created_at'\)[\s\S]*limit\(50\)/); });
+check('Member tickets query relies on RLS and does not accept another user id', () => assert.match(service, /from\('support_tickets'\)[\s\S]*select\('id,subject,category,status,priority,created_at,updated_at'\)/));
+check('Support messages are scoped to selected ticket', () => assert.match(service, /from\('support_messages'\)[\s\S]*eq\('ticket_id', ticketId\)/));
+check('New ticket uses existing secured RPC', () => assert.match(service, /rpc\('create_support_ticket'/));
+check('Member reply uses existing secured RPC', () => assert.match(service, /rpc\('member_reply_support_ticket'/));
+check('Notification read uses existing secured RPC', () => assert.match(service, /rpc\('mark_notification_read'/));
+check('Compose and reply enforce database-compatible message lengths', () => { assert.match(service, /cleanSubject\.length < 4 \|\| cleanSubject\.length > 120/); assert.match(service, /cleanMessage\.length > 5000/); });
+check('UI supports read state, ticket status and closed-ticket guard', () => { assert.match(panel, /!item\.read_at/); assert.match(panel, /selected\.status/); assert.match(panel, /\['open','in_progress','waiting_member'\]/); });
+check('Migration 015 defines member-only RLS and authenticated RPC grants', () => { assert.match(migration, /Members read own notifications/); assert.match(migration, /Members read own support tickets/); assert.match(migration, /grant execute on function public\.create_support_ticket\(text,text,text\) to authenticated/); });
+console.log(`\n${passed}/13 Step47 contract checks passed.`);

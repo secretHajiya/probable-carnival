@@ -1,0 +1,21 @@
+{
+  "step": 5,
+  "files_added": [
+    "apps/web/src/dashboard/Dashboard.tsx",
+    "apps/web/src/dashboard/dashboard.css",
+    "docs/DASHBOARD_STEP05.md",
+    "docs/DASHBOARD_VALIDATION_STEP05.json"
+  ],
+  "main_route_updated": true,
+  "reads": [
+    "wallet_accounts",
+    "wallet_ledger",
+    "withdrawal_requests",
+    "referrals"
+  ],
+  "writes": [],
+  "rls_expected": true,
+  "production_tested": false,
+  "build_tested": false,
+  "reason": "Dependency installation timed out in the execution environment."
+}

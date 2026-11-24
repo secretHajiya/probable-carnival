@@ -1,0 +1,18 @@
+{
+  "locales": [
+    "en",
+    "ar",
+    "fr",
+    "es",
+    "pt",
+    "de",
+    "tr",
+    "hi",
+    "zh"
+  ],
+  "keys_per_locale": 113,
+  "key_parity": true,
+  "rtl": "ar",
+  "hausa_member_locale": false,
+  "legacy_integration": false
+}

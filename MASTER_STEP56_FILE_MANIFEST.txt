@@ -1,0 +1,15 @@
+Vyra Rewards Global — Master Step56 cumulative archive
+Baseline: Vyra-Rewards-Global-Master-Step55-Arabic-RTL.zip
+Step56: Android build readiness preflight and documentation
+
+New files:
+- docs/STEP56_ANDROID_BUILD_READINESS.md
+- STEP56_DELIVERY_REPORT.md
+- apps/mobile/tests/step56_android_build_preflight.mjs
+
+Updated files:
+- README.md
+- package.json
+- apps/mobile/package.json
+
+No prior files intentionally removed. No SQL, Production DB, Worker, payout, or withdrawal changes.

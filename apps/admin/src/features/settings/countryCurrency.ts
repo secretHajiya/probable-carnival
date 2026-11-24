@@ -1,0 +1,8 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+export type CountrySetting = { country_code: string; country_name: string; default_currency_code: string; timezone_name: string; is_enabled: boolean };
+export type CurrencySetting = { currency_code: string; currency_name: string; minor_units: number; is_enabled: boolean };
+export type CountryCurrencySnapshot = { countries: CountrySetting[]; currencies: CurrencySetting[]; settings: Array<{ setting_key: string; setting_value: unknown; description: string; updated_at: string }> };
+async function call<T>(client: SupabaseClient, name: string, args?: Record<string, unknown>): Promise<T> { const { data, error } = await client.rpc(name, args ?? {}); if (error) throw new Error(error.message); return data as T; }
+export const getCountryCurrencySettings = (client: SupabaseClient) => call<CountryCurrencySnapshot>(client, 'admin_list_country_currency_settings');
+export const saveCountrySetting = (client: SupabaseClient, value: CountrySetting) => call<null>(client, 'admin_upsert_country_setting', { p_country_code: value.country_code.trim().toUpperCase(), p_country_name: value.country_name.trim(), p_default_currency_code: value.default_currency_code.trim().toUpperCase(), p_timezone_name: value.timezone_name.trim(), p_is_enabled: value.is_enabled });
+export const saveCurrencySetting = (client: SupabaseClient, value: CurrencySetting) => call<null>(client, 'admin_upsert_currency_setting', { p_currency_code: value.currency_code.trim().toUpperCase(), p_currency_name: value.currency_name.trim(), p_minor_units: value.minor_units, p_is_enabled: value.is_enabled });

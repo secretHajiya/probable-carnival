@@ -1,0 +1,28 @@
+{
+  "name": "@vyra/mobile",
+  "private": true,
+  "version": "0.1.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "prebuild:android": "expo prebuild --platform android",
+    "prebuild:android:clean": "expo prebuild --platform android --clean",
+    "typecheck": "tsc --noEmit",
+    "build:android:debug": "expo prebuild --platform android --non-interactive && cd android && ./gradlew assembleDebug",
+    "preflight:android": "node tests/step56_android_build_preflight.mjs && node tests/step59_expo_android_config_audit.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.0",
+    "expo": "~58.0.0",
+    "expo-secure-store": "~58.0.3",
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-url-polyfill": "^2.0.0",
+    "unity-levelplay-mediation": "9.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~5.9.2"
+  }
+}

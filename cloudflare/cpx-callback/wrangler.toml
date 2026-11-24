@@ -1,0 +1,6 @@
+name = "vyra-rewards-global-cpx-callback"
+main = "src/index.js"
+compatibility_date = "2026-11-22"
+workers_dev = true
+
+# Configure secrets with `wrangler secret put`; never store secret values here.

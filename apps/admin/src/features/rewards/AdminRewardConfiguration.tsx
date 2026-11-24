@@ -1,0 +1,14 @@
+import React from 'react';
+import { requireSupabase } from '../../lib/supabase';
+type RewardRule = { id:string; country_code:string|null; provider_id:string|null; rule_name:string; coins_per_revenue_major_unit:number; is_active:boolean; effective_from:string; effective_to:string|null };
+type Config = { reward_rules:RewardRule[]; daily_checkin:{configured:boolean;is_enabled:boolean;reward_coins:number;timezone_name:string|null;updated_at?:string;updated_by?:string|null} };
+export function AdminRewardConfiguration({onBack}:{onBack:()=>void}) {
+ const [data,setData]=React.useState<Config|null>(null); const [busy,setBusy]=React.useState(false); const [error,setError]=React.useState('');
+ const load=React.useCallback(async()=>{setBusy(true);setError('');try{const {data:result,error:rpcError}=await requireSupabase().rpc('admin_get_reward_configuration');if(rpcError)throw rpcError;setData(result as Config);}catch(e){setError(e instanceof Error?e.message:'Unable to load reward configuration.');}finally{setBusy(false);}},[]);
+ React.useEffect(()=>{void load();},[load]); const fmt=(v:number)=>new Intl.NumberFormat('en-US').format(Number(v||0));
+ return <section className="panel"><div className="section-head"><div><h2>Reward configuration</h2><p>Read-only view of reward rules and daily check-in settings.</p></div><div className="head-actions"><button className="secondary" onClick={onBack}>Back</button><button className="secondary" onClick={()=>void load()} disabled={busy}>Refresh</button></div></div>
+ {busy&&<p>Loading configuration…</p>}{error&&<p className="error" role="alert">{error}</p>}{data&&<>
+ <article className="metric"><span>Daily check-in</span><strong>{data.daily_checkin.is_enabled?'Enabled':'Disabled'}</strong><p>Reward: {fmt(data.daily_checkin.reward_coins)} coins · Timezone: {data.daily_checkin.timezone_name||'Not configured'}</p></article>
+ <h3>Reward rules ({data.reward_rules.length})</h3>{data.reward_rules.length===0?<p>No reward rules configured.</p>:<div className="table-wrap"><table><thead><tr><th>Rule</th><th>Country</th><th>Provider</th><th>Coins / major unit</th><th>Status</th><th>Effective period</th></tr></thead><tbody>{data.reward_rules.map(rule=><tr key={rule.id}><td>{rule.rule_name}<small>{rule.id}</small></td><td>{rule.country_code||'Global'}</td><td>{rule.provider_id||'All providers'}</td><td>{fmt(rule.coins_per_revenue_major_unit)}</td><td><span className="pill">{rule.is_active?'Active':'Inactive'}</span></td><td>{new Date(rule.effective_from).toLocaleString()}<br/><small>{rule.effective_to?new Date(rule.effective_to).toLocaleString():'No end date'}</small></td></tr>)}</tbody></table></div>}
+ <p className="muted">This screen is intentionally read-only. No reward amount, provider rate, or country setting can be changed here.</p></>}</section>;
+}

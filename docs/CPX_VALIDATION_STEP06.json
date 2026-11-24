@@ -1,0 +1,17 @@
+{
+  "step": 6,
+  "earn_center_ui": true,
+  "dashboard_navigation": true,
+  "edge_function": "supabase/functions/cpx-wall-config/index.ts",
+  "server_side_hash_only": true,
+  "requires_authenticated_user": true,
+  "checks_profile_status": true,
+  "checks_provider_enabled": true,
+  "checks_web_app_enabled": true,
+  "postback_handler_implemented": false,
+  "wallet_crediting_verified": false,
+  "reversal_handling_verified": false,
+  "provider_enabled_by_this_step": false,
+  "production_tested": false,
+  "build_tested": false
+}

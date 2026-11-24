@@ -1,0 +1,27 @@
+VYRA REWARDS GLOBAL — STEP31 VERIFICATION
+Baseline: Master Step30 US PayPal Readiness Audit
+Date: 2026-11-23
+
+SOURCE CHANGES
+- Added Supabase migration 031 for US-only PayPal recipient vault, payout attempts, webhook event deduplication, member withdrawal RPC, finance claim RPC, and idempotent settlement RPC.
+- Added isolated Cloudflare PayPal Sandbox Worker.
+- Added Worker configuration template, setup documentation, and source contract tests.
+- Nigeria payout-details Worker was not modified.
+
+CHECK RESULTS
+- Cloudflare Worker TypeScript strict check: PASS (tsc --noEmit --strict, ES2022 + DOM libs).
+- Step31 static contract checks: 15/15 PASS.
+- Source ZIP Step30: 382 entries; archive integrity PASS.
+- Step31 cumulative ZIP: 390 entries expected; all 382 previous entries preserved byte-for-byte; 8 new Step31 files; archive integrity PASS.
+
+NOT TESTED / NOT DEPLOYED
+- SQL migration was not executed or validated against a live PostgreSQL instance.
+- No Supabase staging or Production database was changed.
+- No PayPal Sandbox credentials were available or used; no OAuth, payout, or webhook network call was made.
+- Worker was not deployed and no PayPal webhook was registered.
+- Member UI and Finance Dashboard are not yet wired to the new endpoints/RPCs.
+- Full PayPal acceptance matrix PP-01 through PP-25 remains outstanding.
+- NG and US withdrawal configurations remain disabled. No real money was sent.
+
+SAFETY
+The Worker is hard-wired to https://api-m.sandbox.paypal.com and refuses PAYPAL_ENV values other than "sandbox". Do not enable withdrawals until staging E2E, security review, reconciliation, and explicit owner approval are complete.

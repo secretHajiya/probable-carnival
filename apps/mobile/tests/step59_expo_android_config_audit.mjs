@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const mobileRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.resolve(mobileRoot, '..', '..');
+const app = JSON.parse(fs.readFileSync(path.join(mobileRoot, 'app.json'), 'utf8')).expo;
+const mobile = JSON.parse(fs.readFileSync(path.join(mobileRoot, 'package.json'), 'utf8'));
+const root = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+const ci = fs.readFileSync(path.join(repoRoot, 'codemagic.yaml'), 'utf8');
+const notes = fs.readFileSync(path.join(mobileRoot, 'ANDROID_BUILD_NOTES.md'), 'utf8');
+let checks = 0;
+const check = (condition, message) => { assert.ok(condition, message); checks += 1; };
+
+check(app.name === 'Vyra Rewards Global', 'Expo display name is stable');
+check(app.slug === 'vyra-rewards-global', 'Expo slug is stable');
+check(app.scheme === 'vyrarewardsglobal', 'Deep-link scheme is declared');
+check(app.android?.package === 'com.vyra.rewardsglobal', 'Android application ID is stable');
+check(Number.isInteger(app.android?.versionCode) && app.android.versionCode > 0, 'Android versionCode is valid');
+check(app.android?.softwareKeyboardLayoutMode === 'pan', 'Android keyboard layout mode is set');
+check(app.android?.permissions?.includes('INTERNET'), 'Internet permission is present');
+check(app.android?.permissions?.includes('ACCESS_NETWORK_STATE'), 'Network-state permission is present');
+check(app.android?.permissions?.includes('AD_ID'), 'Advertising ID permission is present');
+check(app.plugins?.includes('expo-secure-store'), 'Secure Store config plugin is declared');
+check(mobile.dependencies?.expo?.startsWith('~58.'), 'Expo SDK 58 dependency is declared');
+check(mobile.dependencies?.['expo-secure-store'], 'Secure Store native package is declared');
+check(mobile.dependencies?.['unity-levelplay-mediation'], 'Unity LevelPlay package is declared');
+check(mobile.scripts?.['prebuild:android'], 'Android prebuild script exists');
+check(mobile.scripts?.['build:android:debug']?.includes('gradlew assembleDebug'), 'Debug Gradle build script exists');
+check(root.scripts?.['preflight:mobile:android'], 'Root Android preflight command is wired');
+check(ci.includes('npx expo config --type public'), 'Codemagic validates Expo public config');
+check(ci.includes('npx expo prebuild --platform android --non-interactive'), 'Codemagic runs Android prebuild');
+check(ci.includes('./gradlew assembleDebug'), 'Codemagic runs debug APK build');
+check(ci.includes('app-debug.apk'), 'Codemagic collects debug APK artifact');
+check(/debug APK, not a signed release APK\/AAB/.test(notes), 'Debug build is distinguished from release signing');
+check(!fs.existsSync(path.join(mobileRoot, 'android')), 'Generated Android project is not accidentally committed');
+check(!fs.existsSync(path.join(repoRoot, 'package-lock.json')), 'Missing lockfile is surfaced, not assumed');
+check(/npm install/.test(ci) && !/npm ci/.test(ci), 'CI does not use npm ci without a lockfile');
+check(!/service_role|CPX_HASH|LEVELPLAY_S2S_SECRET|PAYPAL_CLIENT_SECRET/i.test(fs.readFileSync(path.join(mobileRoot, '.env.example'), 'utf8')), 'Mobile env example has no server secrets');
+
+console.log(`Step59 Expo Android config audit: ${checks}/${checks} checks passed.`);
+console.log('Static source/config audit only; Expo CLI, Gradle, APK, emulator and physical-device builds were not run.');

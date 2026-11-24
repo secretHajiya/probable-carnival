@@ -1,0 +1,18 @@
+name = "vyra-paypal-payout-sandbox"
+main = "src/index.ts"
+compatibility_date = "2026-11-23"
+workers_dev = true
+
+[vars]
+PAYPAL_ENV = "sandbox"
+PAYPAL_KEY_VERSION = "v1"
+ALLOWED_ORIGIN = "https://REPLACE-WITH-MEMBER-APP-ORIGIN,https://REPLACE-WITH-ADMIN-APP-ORIGIN"
+
+# Configure secrets with `wrangler secret put`; never commit credentials or keys:
+# SUPABASE_URL
+# SUPABASE_ANON_KEY
+# SUPABASE_SERVICE_ROLE_KEY
+# PAYPAL_CLIENT_ID
+# PAYPAL_CLIENT_SECRET
+# PAYPAL_WEBHOOK_ID
+# PAYPAL_ENCRYPTION_KEY (base64-encoded 32-byte random key)

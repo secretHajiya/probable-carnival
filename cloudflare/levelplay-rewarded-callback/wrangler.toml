@@ -1,0 +1,6 @@
+name = "vyra-levelplay-rewarded-callback"
+main = "src/index.js"
+compatibility_date = "2026-11-22"
+
+[vars]
+LEVELPLAY_MAX_CALLBACK_AGE_SECONDS = "86400"

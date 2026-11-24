@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+const root = path.resolve(import.meta.dirname, '..');
+const service = fs.readFileSync(path.join(root, 'apps/mobile/src/services/profile-settings.service.ts'), 'utf8');
+const i18n = fs.readFileSync(path.join(root, 'apps/mobile/src/services/i18n.ts'), 'utf8');
+const profile = fs.readFileSync(path.join(root, 'apps/mobile/src/components/ProfileSettingsPanel.tsx'), 'utf8');
+const codes = [...service.matchAll(/code: '([a-z]{2})'/g)].map((m) => m[1]);
+assert.deepEqual(codes, ['en','ar','fr','es','pt','de','tr','hi','zh']);
+assert.doesNotMatch(service, /code:\s*'ha'/);
+assert.doesNotMatch(i18n, /^\s*ha:\s*\{/m);
+assert.match(i18n, /language && language in messages/);
+assert.match(i18n, /: 'en'/, 'unknown/legacy locale falls back to English');
+assert.doesNotMatch(profile, /selectedLanguage === 'ha'/);
+assert.match(profile, /MEMBER_LANGUAGES\.some/);
+assert.match(profile, /\? profile\.preferred_language as MemberLanguage : 'en'/);
+console.log('Step51 Mobile Hausa removal: 9/9 passed');

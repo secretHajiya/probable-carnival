@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Vyra Rewards Global",
+    "slug": "vyra-rewards-global",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "vyrarewardsglobal",
+    "android": {
+      "package": "com.vyra.rewardsglobal",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "AD_ID"
+      ],
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#071B8F"
+      }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "updates": {
+      "enabled": false
+    },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#071B8F"
+    }
+  }
+}
