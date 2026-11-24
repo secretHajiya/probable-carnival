@@ -1,3 +1,7 @@
+## Latest increment — Step66 Android release bundle fix
+
+The Codemagic Android workflow now builds the release Gradle variant (`assembleRelease`) and collects `app-release.apk`, so React Native packages the JavaScript bundle instead of relying on a Metro server on the user's computer. This is a source/configuration change only; a new Codemagic build and physical-device verification are still required. Play Store production signing/AAB configuration remains separate. See `docs/STEP66_ANDROID_RELEASE_BUNDLE_FIX.md`.
+
 # Vyra Rewards Global
 
 Standalone rebuild of Vyra Rewards Global. This project is designed to run independently of AppDeploy.

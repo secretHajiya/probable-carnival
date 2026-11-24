@@ -14,11 +14,11 @@ test('Vyra keeps its current Node 22 and Java 17 build environment', () => {
   assert.match(yaml, /java:\s*17/);
 });
 
-test('Codemagic still builds the mobile Expo workspace and debug APK', () => {
+test('Codemagic still builds the mobile Expo workspace and release APK with bundled JS', () => {
   assert.match(yaml, /cd apps\/mobile/);
   assert.match(yaml, /npx expo prebuild --platform android --non-interactive/);
-  assert.match(yaml, /\.\/gradlew assembleDebug/);
-  assert.match(yaml, /app-debug\.apk/);
+  assert.match(yaml, /\.\/gradlew assembleRelease/);
+  assert.match(yaml, /app-release\.apk/);
 });
 
 test('the project retains its three npm workspaces', () => {

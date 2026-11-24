@@ -9,8 +9,8 @@
     "prebuild:android": "expo prebuild --platform android",
     "prebuild:android:clean": "expo prebuild --platform android --clean",
     "typecheck": "tsc --noEmit",
-    "build:android:debug": "expo prebuild --platform android --non-interactive && cd android && ./gradlew assembleDebug",
-    "preflight:android": "node tests/step56_android_build_preflight.mjs && node tests/step59_expo_android_config_audit.mjs"
+    "preflight:android": "node tests/step56_android_build_preflight.mjs && node tests/step59_expo_android_config_audit.mjs",
+    "build:android:release": "expo prebuild --platform android --non-interactive && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",

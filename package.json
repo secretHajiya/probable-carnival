@@ -30,6 +30,7 @@
     "preflight:dependencies": "node scripts/step61-dependency-resolution-preflight.mjs",
     "diagnose:npm-registry": "node scripts/step62-registry-connectivity-diagnostic.mjs",
     "test:step64-network-runbook": "node --test tests/step64_eai_again_runbook.mjs",
-    "test:step65-codemagic-install-parity": "node --test tests/step65_codemagic_install_parity.test.mjs"
+    "test:step65-codemagic-install-parity": "node --test tests/step65_codemagic_install_parity.test.mjs",
+    "build:mobile:android:release": "npm --workspace @vyra/mobile run build:android:release"
   }
 }

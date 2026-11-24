@@ -27,13 +27,13 @@ check(mobile.dependencies?.expo?.startsWith('~58.'), 'Expo SDK 58 dependency is 
 check(mobile.dependencies?.['expo-secure-store'], 'Secure Store native package is declared');
 check(mobile.dependencies?.['unity-levelplay-mediation'], 'Unity LevelPlay package is declared');
 check(mobile.scripts?.['prebuild:android'], 'Android prebuild script exists');
-check(mobile.scripts?.['build:android:debug']?.includes('gradlew assembleDebug'), 'Debug Gradle build script exists');
+check(mobile.scripts?.['build:android:release']?.includes('gradlew assembleRelease'), 'Release Gradle build script exists');
 check(root.scripts?.['preflight:mobile:android'], 'Root Android preflight command is wired');
 check(ci.includes('npx expo config --type public'), 'Codemagic validates Expo public config');
 check(ci.includes('npx expo prebuild --platform android --non-interactive'), 'Codemagic runs Android prebuild');
-check(ci.includes('./gradlew assembleDebug'), 'Codemagic runs debug APK build');
-check(ci.includes('app-debug.apk'), 'Codemagic collects debug APK artifact');
-check(/debug APK, not a signed release APK\/AAB/.test(notes), 'Debug build is distinguished from release signing');
+check(ci.includes('./gradlew assembleRelease'), 'Codemagic runs release APK build');
+check(ci.includes('app-release.apk'), 'Codemagic collects release APK artifact');
+check(/release APK embeds the JavaScript bundle/.test(notes), 'Debug build is distinguished from release signing');
 check(!fs.existsSync(path.join(mobileRoot, 'android')), 'Generated Android project is not accidentally committed');
 check(!fs.existsSync(path.join(repoRoot, 'package-lock.json')), 'Missing lockfile is surfaced, not assumed');
 check(/npm install/.test(ci) && !/npm ci/.test(ci), 'CI does not use npm ci without a lockfile');

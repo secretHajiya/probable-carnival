@@ -1,24 +1,25 @@
-# Android native build preparation — Step 02
+# Android native build preparation — Step66
 
-## What changed
-- The Expo app configuration now declares the Android application ID `com.vyra.rewardsglobal`, internet/network permissions, and Android keyboard pan behavior.
-- The unused Expo EAS project-ID placeholder was removed; this project is preparing for Codemagic, not EAS.
-- Added mobile typecheck and Expo prebuild scripts.
-- Added a Codemagic workflow that installs dependencies in CI, generates the Android native project, and produces a **debug APK**.
+## Current Codemagic workflow
+Codemagic reads `codemagic.yaml` from the repository root. Workflow `vyra-android-release` uses Node 22.13.0 and Java 17, installs workspace dependencies with `npm install --legacy-peer-deps`, validates Expo config, runs Expo prebuild, and executes `./gradlew assembleRelease`.
 
-## Build workflow
-Codemagic reads `codemagic.yaml` from the repository root. Select workflow `vyra-android-debug`. The workflow uses Node 22.13.0 and Java 17. It runs `npm install` only on the Codemagic build machine; no local install is requested.
+The release Gradle variant runs the React Native bundle task and packages the JavaScript/assets into the APK. This avoids requiring a Metro server on the developer computer when the installed APK launches. The expected artifact is `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`.
 
-## Required configuration before a connected app build
-Set these Codemagic environment variables (or a protected variable group):
+## Required public mobile configuration
+Set these Codemagic environment variables (or a protected variable group) if the connected mobile app requires them:
 - `EXPO_PUBLIC_SUPABASE_URL` — Supabase project URL.
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon/publishable key only.
 
 Never add a Supabase service-role key, CPX hash, Unity S2S private key, or payout secrets to mobile environment variables. Public `EXPO_PUBLIC_` values are bundled into the app.
 
-## Important limitations
-- This workflow is a CI recipe; it has **not** been run in Codemagic in this step.
-- No generated `android/` directory is committed. Expo prebuild generates it on the CI machine from app config and installed native modules.
-- The workflow builds a debug APK, not a signed release APK/AAB. Signing credentials and release workflow are a later release task.
-- Unity LevelPlay dependency is present, but no App Key, ad unit, initialization code, S2S callback, or reward-credit path is configured yet. Do not show live ads or issue ad rewards at this stage.
-- No Expo project ID, app icon, splash artwork, Unity credentials, or production secrets were invented.
+## Signing and release limitations
+- The release APK embeds the JavaScript bundle and can launch without a Metro server.
+- No generated `android/` directory is committed; Expo prebuild generates it on the CI machine.
+- This workflow creates a release-variant APK with the JavaScript bundle embedded. It does not by itself configure a Play Store production signing key or generate an AAB.
+- Configure secure Android release signing in Codemagic before publishing to Google Play.
+- No actual Codemagic build, APK installation, emulator test, or physical-device test is claimed by this source change. The next build log and APK must be checked.
+- No generated `android/` directory is committed; Expo prebuild generates it on the CI machine.
+- Unity LevelPlay dependency exists, but live ad credentials/initialization and reward-credit acceptance remain separate work.
+
+## Security
+Never commit `.env` files or private server/provider secrets.

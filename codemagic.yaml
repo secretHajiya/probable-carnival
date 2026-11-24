@@ -1,4 +1,3 @@
-
 workflows:
   vyra-android-release:
     name: Vyra Rewards Global - Android Release APK
@@ -9,23 +8,21 @@ workflows:
       java: 17
     scripts:
       - name: Install workspace dependencies (CI only)
+        # Matches the proven install mode in the owner's previously built Expo app.
+        # This relaxes peer-dependency resolution only; it does not bypass DNS/network failures.
         script: npm install --legacy-peer-deps
-
       - name: Validate Expo app configuration
         script: |
           cd apps/mobile
           npx expo config --type public
-
       - name: Generate Android native project
         script: |
           cd apps/mobile
           npx expo prebuild --platform android --non-interactive
-
-      - name: Build release APK
+      - name: Build release APK with embedded JavaScript bundle
         script: |
           cd apps/mobile/android
           chmod +x gradlew
           ./gradlew assembleRelease
-
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/release/app-release.apk
